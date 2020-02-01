@@ -7,7 +7,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 
 namespace ScottPlot
@@ -16,7 +18,6 @@ namespace ScottPlot
     {
         public PixelFormat pixelFormat = PixelFormat.Format32bppPArgb;
         private readonly Settings settings;
-        public readonly MouseTracker mouseTracker;
 
         public Plot(int width = 800, int height = 600, IGraphicBackend backendFigure = null, IGraphicBackend backendData = null, IGraphicBackend backendLegend = null)
         {
@@ -160,6 +161,9 @@ namespace ScottPlot
             if (renderFirst)
                 RenderBitmap();
 
+            if (settings.figureSize.Width == 1 || settings.figureSize.Height == 1)
+                throw new Exception("The figure has not yet been sized (it is 1px by 1px). Resize the figure and try to save again.");
+
             filePath = System.IO.Path.GetFullPath(filePath);
             string fileFolder = System.IO.Path.GetDirectoryName(filePath);
             if (!System.IO.Directory.Exists(fileFolder))
@@ -209,17 +213,26 @@ namespace ScottPlot
             double x,
             double y,
             Color? color = null,
-            string fontName = "Segoe UI",
+            string fontName = null,
             double fontSize = 12,
             bool bold = false,
             string label = null,
-            TextAlignment alignment = TextAlignment.upperLeft
+            TextAlignment alignment = TextAlignment.middleLeft,
+            double rotation = 0,
+            bool frame = false,
+            Color? frameColor = null
             )
         {
             if (color == null)
                 color = settings.GetNextColor();
 
-            fontName = ScottPlot.Tools.VerifyFont(fontName);
+            if (fontName == null)
+                fontName = Config.Fonts.GetDefaultFontName();
+
+            if (frameColor == null)
+                frameColor = Color.White;
+
+            fontName = Config.Fonts.GetValidFontName(fontName);
 
             PlottableText plottableText = new PlottableText(
                 text: text,
@@ -230,7 +243,10 @@ namespace ScottPlot
                 fontSize: fontSize,
                 bold: bold,
                 label: label,
-                alignment: alignment
+                alignment: alignment,
+                rotation: rotation,
+                frame: frame,
+                frameColor: (Color)frameColor
                 );
 
             settings.plottables.Add(plottableText);
@@ -315,6 +331,59 @@ namespace ScottPlot
             return scatterPlot;
         }
 
+        public PlottableScatter PlotArrow(
+            double tipX,
+            double tipY,
+            double baseX,
+            double baseY,
+            double lineWidth = 5,
+            float arrowheadWidth = 3,
+            float arrowheadLength = 3,
+            Color? color = null,
+            string label = null
+            )
+        {
+
+            var arrow = PlotScatter(
+                xs: new double[] { baseX, tipX },
+                ys: new double[] { baseY, tipY },
+                color: color,
+                lineWidth: lineWidth,
+                label: label,
+                markerSize: 0
+                );
+
+
+            AdjustableArrowCap arrowCap = new AdjustableArrowCap(arrowheadWidth, arrowheadLength, isFilled: true);
+
+            arrow.penLine.CustomEndCap = arrowCap;
+            arrow.penLine.StartCap = LineCap.Flat;
+
+            return arrow;
+        }
+
+        public PlottableScatter PlotLine(
+            double x1,
+            double y1,
+            double x2,
+            double y2,
+            Color? color = null,
+            double lineWidth = 1,
+            string label = null,
+            LineStyle lineStyle = LineStyle.Solid
+            )
+        {
+            return PlotScatter(
+                xs: new double[] { x1, x2 },
+                ys: new double[] { y1, y2 },
+                color: color,
+                lineWidth: lineWidth,
+                label: label,
+                lineStyle: lineStyle,
+                markerSize: 0
+                );
+        }
+
         public PlottableScatter PlotStep(
             double[] xs,
             double[] ys,
@@ -354,11 +423,16 @@ namespace ScottPlot
             Color? color = null,
             double lineWidth = 1,
             double markerSize = 5,
-            string label = null
+            string label = null,
+            Color[] colorByDensity = null,
+            int? maxRenderIndex = null
             )
         {
             if (color == null)
                 color = settings.GetNextColor();
+
+            if (maxRenderIndex == null)
+                maxRenderIndex = ys.Length - 1;
 
             PlottableSignal signal = new PlottableSignal(
                 ys: ys,
@@ -369,7 +443,9 @@ namespace ScottPlot
                 lineWidth: lineWidth,
                 markerSize: markerSize,
                 label: label,
-                useParallel: settings.misc.useParallel
+                useParallel: settings.misc.useParallel,
+                colorByDensity: colorByDensity,
+                maxRenderIndex: (int)maxRenderIndex
                 );
 
             settings.plottables.Add(signal);
@@ -581,11 +657,14 @@ namespace ScottPlot
             return settings.plottables;
         }
 
-        public Settings GetSettings()
+        public Settings GetSettings(bool showWarning = true)
         {
-            // The user really should not interact with the settings class directly.
-            // This is exposed here to aid in testing.
-            Console.WriteLine("WARNING: GetSettings() is only for development and testing");
+            if (showWarning)
+            {
+                // The user really should not interact with the settings class directly.
+                // This is exposed here to aid in testing.
+                Console.WriteLine("WARNING: GetSettings() is only for development and testing");
+            }
             return settings;
         }
 
@@ -616,16 +695,22 @@ namespace ScottPlot
             return settings.axes.limits;
         }
 
+        public void Axis(double[] axisLimits)
+        {
+            if ((axisLimits == null) || (axisLimits.Length != 4))
+                throw new ArgumentException("axis limits must contain 4 elements");
+            Axis(axisLimits[0], axisLimits[1], axisLimits[2], axisLimits[3]);
+        }
+
         public void AxisAuto(
             double horizontalMargin = .05,
             double verticalMargin = .1,
-            int tightenPadding = 5,
             bool xExpandOnly = false,
             bool yExpandOnly = false
             )
         {
             settings.AxisAuto(horizontalMargin, verticalMargin, xExpandOnly, yExpandOnly);
-            TightenLayout(tightenPadding);
+            TightenLayout();
         }
 
         public void AxisAutoX(
@@ -756,7 +841,7 @@ namespace ScottPlot
 
         public void Legend(
             bool enableLegend = true,
-            string fontName = "Segoe UI",
+            string fontName = null,
             float fontSize = 12,
             bool bold = false,
             Color? fontColor = null,
@@ -764,9 +849,11 @@ namespace ScottPlot
             Color? frameColor = null,
             legendLocation location = legendLocation.lowerRight,
             shadowDirection shadowDirection = shadowDirection.lowerRight,
-            LineStyle lineStyle = LineStyle.Solid
+            bool? fixedLineWidth = null
             )
         {
+            if(fontName == null)
+                fontName = Config.Fonts.GetDefaultFontName();
             if (fontColor != null)
                 settings.legend.colorText = (Color)fontColor;
             if (backColor != null)
@@ -774,9 +861,12 @@ namespace ScottPlot
             if (frameColor != null)
                 settings.legend.colorFrame = (Color)frameColor;
 
-            fontName = ScottPlot.Tools.VerifyFont(fontName);
+            fontName = Config.Fonts.GetValidFontName(fontName);
             FontStyle fontStyle = (bold) ? FontStyle.Bold : FontStyle.Regular;
             settings.legend.font = new Font(fontName, fontSize, fontStyle);
+
+            if (fixedLineWidth != null)
+                settings.legend.fixedLineWidth = (bool)fixedLineWidth;
 
             if (enableLegend)
             {
@@ -809,7 +899,13 @@ namespace ScottPlot
             bool? useOffsetNotation = null,
             bool? useExponentialNotation = null,
             bool? dateTimeX = null,
-            bool? dateTimeY = null
+            bool? dateTimeY = null,
+            bool? rulerModeX = null,
+            bool? rulerModeY = null,
+            bool? invertSignX = null,
+            bool? invertSignY = null,
+            string fontName = null,
+            float? fontSize = null
             )
         {
             if (displayTicksX != null)
@@ -829,27 +925,71 @@ namespace ScottPlot
             if (displayTicksYminor != null)
                 settings.ticks.displayYminor = (bool)displayTicksYminor;
             if (dateTimeX != null)
-                settings.ticks.timeFormatX = (bool)dateTimeX;
+                settings.ticks.x.dateFormat = (bool)dateTimeX;
             if (dateTimeY != null)
-                settings.ticks.timeFormatY = (bool)dateTimeY;
+                settings.ticks.y.dateFormat = (bool)dateTimeY;
+            if (rulerModeX != null)
+                settings.ticks.rulerModeX = (bool)rulerModeX;
+            if (rulerModeY != null)
+                settings.ticks.rulerModeY = (bool)rulerModeY;
+            if (invertSignX != null)
+                settings.ticks.x.invertSign = (bool)invertSignX;
+            if (invertSignY != null)
+                settings.ticks.y.invertSign = (bool)invertSignY;
+            if (fontSize == null)
+                fontSize = settings.ticks.font.Size;
+            if (fontName != null)
+                settings.ticks.font = new Font(fontName, (float)fontSize, FontStyle.Regular);
+
+            // dont use offset notation if the sign is inverted
+            if (settings.ticks.x.invertSign || settings.ticks.y.invertSign)
+                settings.ticks.useOffsetNotation = false;
 
             if (dateTimeX != null || dateTimeY != null)
             {
                 // why these in this order? voodoo magic
                 TightenLayout();
                 RenderBitmap();
-                TightenLayout();
             }
+
+            TightenLayout();
+        }
+
+        public void XTicks(double[] positions = null, string[] labels = null)
+        {
+            TightenLayout();
+            settings.ticks.x.manualTickPositions = positions;
+            settings.ticks.x.manualTickLabels = labels;
+        }
+
+        public void YTicks(double[] positions = null, string[] labels = null)
+        {
+            TightenLayout();
+            settings.ticks.y.manualTickPositions = positions;
+            settings.ticks.y.manualTickLabels = labels;
         }
 
         public void Grid(
             bool? enable = null,
             Color? color = null,
             double? xSpacing = null,
-            double? ySpacing = null
+            double? ySpacing = null,
+            bool? enableHorizontal = null,
+            bool? enableVertical = null
             )
         {
-            settings.grid.visible = enable ?? settings.grid.visible;
+            if (enable != null)
+            {
+                settings.grid.enableHorizontal = (bool)enable;
+                settings.grid.enableVertical = (bool)enable;
+            }
+
+            if (enableHorizontal != null)
+                settings.grid.enableHorizontal = (bool)enableHorizontal;
+
+            if (enableVertical != null)
+                settings.grid.enableVertical = (bool)enableVertical;
+
             settings.grid.color = color ?? settings.grid.color;
 
             settings.ticks.manualSpacingX = (xSpacing == null) ? 0 : (double)xSpacing;
@@ -877,6 +1017,7 @@ namespace ScottPlot
                 settings.layout.displayFrameByAxis[2] = (bool)bottom;
             if (top != null)
                 settings.layout.displayFrameByAxis[3] = (bool)top;
+            TightenLayout();
         }
 
         public void Benchmark(bool show = true, bool toggle = false)
@@ -894,35 +1035,84 @@ namespace ScottPlot
             settings.legend.antiAlias = legend;
         }
 
-        public void TightenLayout(int? padding = null)
+        public void TightenLayout(int? padding = null, bool render = false)
         {
+            if (settings.gfxData is null)
+                return;
+
+            if (render)
+                GetBitmap();
             if (!settings.axes.hasBeenSet && settings.plottables.Count > 0)
                 settings.AxisAuto();
-            if (padding != null)
-                settings.layout.padOnAllSides = (int)padding;
-            settings.ticks?.x?.Recalculate(settings, false);
-            settings.ticks?.y?.Recalculate(settings, true);
-            settings.layout.Tighten(settings.ticks, settings.title, settings.xLabel, settings.yLabel);
+
+            settings.ticks?.x?.Recalculate(settings); // this probably never happens
+            settings.ticks?.y?.Recalculate(settings); // this probably never happens
+
+            int pad = (padding is null) ? 15 : (int)padding;
+            settings.TightenLayout(pad, pad, pad, pad);
+
             Resize();
         }
 
-        public void MatchPadding(Plot sourcePlot, bool horizontal = true, bool vertical = true)
+        public void Layout(
+                double? yLabelWidth = null,
+                double? yScaleWidth = null,
+                double? y2LabelWidth = null,
+                double? y2ScaleWidth = null,
+                double? titleHeight = null,
+                double? xLabelHeight = null,
+                double? xScaleHeight = null
+            )
         {
+            TightenLayout(render: true);
+
+            if (yLabelWidth != null) settings.layout.yLabelWidth = (int)yLabelWidth;
+            if (yScaleWidth != null) settings.layout.yScaleWidth = (int)yScaleWidth;
+            if (y2LabelWidth != null) settings.layout.y2LabelWidth = (int)y2LabelWidth;
+            if (y2ScaleWidth != null) settings.layout.y2ScaleWidth = (int)y2ScaleWidth;
+            if (titleHeight != null) settings.layout.titleHeight = (int)titleHeight;
+            if (xLabelHeight != null) settings.layout.xLabelHeight = (int)xLabelHeight;
+            if (xScaleHeight != null) settings.layout.xScaleHeight = (int)xScaleHeight;
+
+            Resize();
+        }
+
+        public void MatchLayout(Plot sourcePlot, bool horizontal = true, bool vertical = true)
+        {
+            if (!sourcePlot.GetSettings(showWarning: false).axes.hasBeenSet)
+                sourcePlot.AxisAuto();
+
+            if (!settings.axes.hasBeenSet)
+                AxisAuto();
+
+            Resize();
+
+            var sourceLayout = sourcePlot.GetSettings(false).layout;
+
             if (horizontal)
             {
-                settings.layout.paddingBySide[0] = sourcePlot.settings.layout.paddingBySide[0];
-                settings.layout.paddingBySide[1] = sourcePlot.settings.layout.paddingBySide[1];
+                settings.layout.yLabelWidth = sourceLayout.yLabelWidth;
+                settings.layout.y2LabelWidth = sourceLayout.y2LabelWidth;
+                settings.layout.yScaleWidth = sourceLayout.yScaleWidth;
+                settings.layout.y2ScaleWidth = sourceLayout.y2ScaleWidth;
             }
+
             if (vertical)
             {
-                settings.layout.paddingBySide[2] = sourcePlot.settings.layout.paddingBySide[2];
-                settings.layout.paddingBySide[3] = sourcePlot.settings.layout.paddingBySide[3];
+                settings.layout.titleHeight = sourceLayout.titleHeight;
+                settings.layout.xLabelHeight = sourceLayout.xLabelHeight;
+                settings.layout.xScaleHeight = sourceLayout.xScaleHeight;
             }
-            Resize();
         }
 
         public void MatchAxis(Plot sourcePlot, bool horizontal = true, bool vertical = true)
         {
+            if (!sourcePlot.GetSettings(showWarning: false).axes.hasBeenSet)
+                sourcePlot.AxisAuto();
+
+            if (!settings.axes.hasBeenSet)
+                AxisAuto();
+
             if (horizontal)
             {
                 settings.axes.x.min = sourcePlot.settings.axes.x.min;
@@ -972,15 +1162,13 @@ namespace ScottPlot
             StyleTools.SetStyle(this, style);
         }
 
+        [Obsolete]
         public void Parallel(bool useParallel)
         {
-            // after refactoring the settings module this seems to due to axis/bitmap interactions
-            throw new NotImplementedException("parallel processing should not be enabled at this time");
-            /*
-            settings.useParallel = useParallel;
-            foreach (var plottable in GetPlottables())
-                plottable.useParallel = useParallel;
-            */
+            throw new NotImplementedException("parallel processing should not used enabled at this time");
+
+            //foreach (var plottable in GetPlottables())
+            //plottable.useParallel = useParallel;
         }
 
         #endregion

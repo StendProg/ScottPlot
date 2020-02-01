@@ -37,7 +37,7 @@ namespace ScottPlot
             // note which plottables are to be included in the legend
             List<int> plottableIndexesNeedingLegend = new List<int>();
             for (int i = 0; i < settings.plottables.Count(); i++)
-                if (settings.plottables[i].label != null)
+                if (settings.plottables[i].label != null && settings.plottables[i].visible)
                     plottableIndexesNeedingLegend.Add(i);
             plottableIndexesNeedingLegend.Reverse();
 
@@ -50,10 +50,7 @@ namespace ScottPlot
             Size frameSize = new Size((int)frameWidth, (int)frameHeight);
             Point[] frameAndTextLocations = GetLocations(settings, padding * 2, frameSize, maxLabelSize.Width);
             Point frameLocation = frameAndTextLocations[0];
-            Point textLocation = frameAndTextLocations[1];
             Point shadowLocation = frameAndTextLocations[2];
-            Rectangle frameRect = new Rectangle(frameLocation, frameSize);
-            Rectangle shadowRect = new Rectangle(shadowLocation, frameSize);
             Point fullFrameLocation = new Point(Math.Min(frameLocation.X, shadowLocation.X), Math.Min(frameLocation.Y, shadowLocation.Y));
             return new Rectangle(fullFrameLocation,
                                 new Size(frameSize.Width + Math.Abs(frameLocation.X - shadowLocation.X) + 1,
@@ -65,7 +62,7 @@ namespace ScottPlot
             // note which plottables are to be included in the legend
             List<int> plottableIndexesNeedingLegend = new List<int>();
             for (int i = 0; i < settings.plottables.Count(); i++)
-                if (settings.plottables[i].label != null)
+                if (settings.plottables[i].label != null && settings.plottables[i].visible)
                     plottableIndexesNeedingLegend.Add(i);
             plottableIndexesNeedingLegend.Reverse();
 
@@ -235,6 +232,20 @@ namespace ScottPlot
             if (plottable is PlottableAxSpan)
                 pen.Width = 10;
 
+            if (settings.legend.fixedLineWidth == false)
+            {
+                if (plottable is PlottableScatter)
+                    pen.Width = (float)((PlottableScatter)plottable).lineWidth;
+                if (plottable is PlottableSignal)
+                    pen.Width = (float)((PlottableSignal)plottable).lineWidth;
+            }
+
+            // dont draw line if it's not on the plottable
+            if ((plottable is PlottableScatter) && (((PlottableScatter)plottable).lineWidth) == 0)
+                return;
+            if ((plottable is PlottableSignal) && (((PlottableSignal)plottable).lineWidth) == 0)
+                return;
+
             switch (plottable.lineStyle)
             {
                 case LineStyle.Solid:
@@ -264,6 +275,14 @@ namespace ScottPlot
         {
             Brush brushMarker = new SolidBrush(plottable.color);
             Pen penMarker = new Pen(plottable.color, 1);
+
+            // dont draw marker if it's not on the plottable
+            if (plottable.markerShape == MarkerShape.none)
+                return;
+            if ((plottable is PlottableScatter) && (((PlottableScatter)plottable).markerSize) == 0)
+                return;
+            if ((plottable is PlottableSignal) && (((PlottableSignal)plottable).markerSize) == 0)
+                return;
 
             PointF corner1 = new PointF(textLocation.X - stubWidth + settings.legend.font.Size / 4, textLocation.Y + settings.legend.font.Size / 4 * padding);
             PointF center = new PointF

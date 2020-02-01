@@ -50,17 +50,19 @@ namespace ScottPlot
             return data;
         }
 
-        public static double[] Cos(int pointCount, double oscillations = 1)
+        public static double[] Cos(int pointCount, double oscillations = 1, double offset = 0, double mult = 1, double phase = 0)
         {
             double sinScale = 2 * Math.PI * oscillations / pointCount;
             double[] ys = new double[pointCount];
             for (int i = 0; i < ys.Length; i++)
-                ys[i] = Math.Cos(i * sinScale);
+                ys[i] = Math.Cos(i * sinScale + phase * Math.PI * 2) * mult + offset;
             return ys;
         }
 
         public static double[] Random(Random rand, int pointCount, double multiplier = 1, double offset = 0)
         {
+            if (rand is null)
+                rand = new Random();
             double[] ys = new double[pointCount];
             for (int i = 0; i < pointCount; i++)
                 ys[i] = rand.NextDouble() * multiplier + offset;
@@ -69,10 +71,20 @@ namespace ScottPlot
 
         public static int[] RandomInts(Random rand, int pointCount, double multiplier = 1, double offset = 0)
         {
+            if (rand is null)
+                rand = new Random();
             int[] ys = new int[pointCount];
             for (int i = 0; i < pointCount; i++)
                 ys[i] = (int)(rand.NextDouble() * multiplier + offset);
             return ys;
+        }
+
+        private static double RandomNormalValue(Random rand, double mean = 0, double stdDev = 1)
+        {
+            double u1 = 1.0 - rand.NextDouble();
+            double u2 = 1.0 - rand.NextDouble();
+            double randStdNormal = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2);
+            return mean + stdDev * randStdNormal;
         }
 
         public static double[] RandomNormal(Random rand, int pointCount, double mean = .5, double stdDev = .5)
@@ -81,18 +93,27 @@ namespace ScottPlot
                 rand = new Random();
             double[] values = new double[pointCount];
             for (int i = 0; i < values.Length; i++)
-            {
-                double u1 = 1.0 - rand.NextDouble();
-                double u2 = 1.0 - rand.NextDouble();
-                double randStdNormal = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2);
-                double randNormal = mean + stdDev * randStdNormal;
-                values[i] = randNormal;
-            }
+                values[i] = RandomNormalValue(rand, mean, stdDev);
+
             return values;
+        }
+
+        public static double[] NoisyLinear(Random rand, int pointCount = 100, double slope = 1, double offset = 0, double noise = 0.1)
+        {
+            if (rand is null)
+                rand = new Random();
+
+            double[] data = new double[pointCount];
+            for (int i = 0; i < data.Length; i++)
+                data[i] = slope * i + offset + RandomNormalValue(rand, 0, noise);
+
+            return data;
         }
 
         public static double[] NoisySin(Random rand, int pointCount, double oscillations = 1, double noiseLevel = .5)
         {
+            if (rand is null)
+                rand = new Random();
             double[] values = Sin(pointCount, oscillations);
             for (int i = 0; i < values.Length; i++)
                 values[i] += rand.NextDouble() * noiseLevel;
@@ -101,6 +122,8 @@ namespace ScottPlot
 
         public static Color RandomColor(Random rand, int min = 0, int max = 255)
         {
+            if (rand is null)
+                rand = new Random();
             int r = rand.Next(min, max);
             int g = rand.Next(min, max);
             int b = rand.Next(min, max);
@@ -108,6 +131,8 @@ namespace ScottPlot
         }
         public static double[] RandomWalk(Random rand, int pointCount, double mult = 1, double offset = 0)
         {
+            if (rand is null)
+                rand = new Random();
             var data = new double[pointCount];
             data[0] = offset;
             for (int i = 1; i < data.Length; i++)
@@ -118,12 +143,16 @@ namespace ScottPlot
             return data;
         }
 
-        public static OHLC[] RandomStockPrices(Random rand, int pointCount, double mult = 10, double startingPrice = 123.45)
+        public static OHLC[] RandomStockPrices(Random rand, int pointCount, double mult = 10, double startingPrice = 123.45, int deltaMinutes = 0, int deltaDays = 1)
         {
+            if (rand is null)
+                rand = new Random(0);
 
             double[] basePrices = ScottPlot.DataGen.RandomWalk(rand, pointCount, mult, startingPrice);
 
             OHLC[] ohlcs = new OHLC[pointCount];
+
+            DateTime dt = new DateTime(1985, 9, 24, 9, 30, 0);
 
             for (int i = 0; i < ohlcs.Length; i++)
             {
@@ -138,7 +167,18 @@ namespace ScottPlot
                 high += basePrices[i];
                 low += basePrices[i];
 
-                ohlcs[i] = new ScottPlot.OHLC(open, high, low, close, i);
+                if (deltaMinutes > 0)
+                {
+                    dt = dt.AddMinutes(deltaMinutes);
+                }
+                else if (deltaDays > 0)
+                {
+                    dt = dt.AddDays(deltaDays);
+                    while ((dt.DayOfWeek == DayOfWeek.Saturday) || (dt.DayOfWeek == DayOfWeek.Sunday))
+                        dt = dt.AddDays(1);
+                }
+
+                ohlcs[i] = new ScottPlot.OHLC(open, high, low, close, dt);
             }
 
             return ohlcs;

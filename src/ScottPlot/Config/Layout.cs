@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Text;
@@ -9,53 +10,84 @@ namespace ScottPlot.Config
 {
     public class Layout
     {
-        // settings here relate to positioning of objects on the figure
+        // users can configure these
+        public int yLabelWidth = 20;
+        public int yScaleWidth = 40;
+        public int y2LabelWidth = 20;
+        public int y2ScaleWidth = 40;
+        public int titleHeight = 20;
+        public int xLabelHeight = 20;
+        public int xScaleHeight = 20;
 
-        public int padOnAllSides = 5; // useful for intentionally adding spacing
-        public int[] paddingBySide = new int[] { 5, 5, 5, 5 }; // X1, X2, Y1, Y2
-
-        public bool displayAxisFrames = true;
-        public bool[] displayFrameByAxis = new bool[] { true, true, true, true };
+        public bool[] displayFrameByAxis; // TODO: MOVE THIS TO ANOTHER CLASS
+        public bool displayAxisFrames = true; // TODO: MOVE THIS TO ANOTHER CLASS
 
         public bool tighteningOccurred = false;
 
-        private Graphics gfx = Graphics.FromHwnd(IntPtr.Zero);
+        public SHRect plot { get; private set; }
+        public SHRect data { get; private set; }
 
-        public void Tighten(Ticks ticks, TextLabel title, TextLabel xLabel, TextLabel yLabel)
+        public SHRect yLabel { get; private set; }
+        public SHRect yScale { get; private set; }
+        public SHRect y2Label { get; private set; }
+        public SHRect y2Scale { get; private set; }
+        public SHRect title { get; private set; }
+        public SHRect xLabel { get; private set; }
+        public SHRect xScale { get; private set; }
+
+        public Layout()
         {
+            displayFrameByAxis = new bool[] { true, true, true, true };
+            Update(640, 480);
+        }
 
-            // "tighten" the plot by reducing whitespce between labels, data, and the edge of the figure
-            if (ticks.x == null)
-                return;
+        public Layout(int width, int height)
+        {
+            Update(width, height);
+        }
 
-            int tickLetterHeight = (int)gfx.MeasureString("test", ticks.font).Height;
+        public void Update(int width, int height)
+        {
+            plot = new SHRect(0, width, height, 0);
 
-            // top
-            paddingBySide[3] = 1;
-            paddingBySide[3] += Math.Max((int)title.height, tickLetterHeight);
-            paddingBySide[3] += padOnAllSides;
+            title = new SHRect(plot);
+            title.ShrinkTo(top: titleHeight);
 
-            // bottom
-            int xLabelHeight = (int)gfx.MeasureString(xLabel.text, xLabel.font).Height;
-            paddingBySide[2] = Math.Max(xLabelHeight, tickLetterHeight);
-            paddingBySide[2] += tickLetterHeight;
-            paddingBySide[2] += padOnAllSides;
+            yLabel = new SHRect(plot);
+            yLabel.ShrinkTo(left: yLabelWidth);
 
-            // left
-            SizeF yLabelSize = gfx.MeasureString(yLabel.text, yLabel.font);
-            paddingBySide[0] = (int)yLabelSize.Height;
-            paddingBySide[0] += (int)ticks.y.maxLabelSize.Width;
-            paddingBySide[0] += padOnAllSides;
+            yScale = new SHRect(plot);
+            yScale.ShrinkTo(left: yScaleWidth);
+            yScale.Shift(rightward: yLabel.Width);
 
-            // right
-            paddingBySide[1] = (int)ticks.y.maxLabelSize.Width / 2;
-            paddingBySide[1] += padOnAllSides;
+            y2Label = new SHRect(plot);
+            y2Label.ShrinkTo(right: y2LabelWidth);
 
-            // override for frameles
-            if (!displayAxisFrames)
-                paddingBySide = new int[] { 0, 0, 0, 0 };
+            y2Scale = new SHRect(plot);
+            y2Scale.ShrinkTo(right: y2ScaleWidth);
+            y2Scale.Shift(rightward: -y2Label.Width);
 
-            tighteningOccurred = true;
+            xLabel = new SHRect(plot);
+            xLabel.ShrinkTo(bottom: xLabelHeight);
+
+            xScale = new SHRect(plot);
+            xScale.ShrinkTo(bottom: xScaleHeight);
+            xScale.Shift(downward: -xLabel.Height);
+
+            // the data rectangle is what is left over
+            data = new SHRect(plot);
+            data.ShrinkBy(top: title.Height);
+            data.ShrinkBy(left: yLabel.Width + yScale.Width);
+            data.ShrinkBy(right: y2Label.Width + y2Scale.Width);
+            data.ShrinkBy(bottom: xLabel.Height + xScale.Height);
+
+            // shrink labels and scales to match dataRect
+            yLabel.MatchVert(data);
+            yScale.MatchVert(data);
+            y2Label.MatchVert(data);
+            y2Scale.MatchVert(data);
+            xLabel.MatchHoriz(data);
+            xScale.MatchHoriz(data);
         }
     }
 }

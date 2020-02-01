@@ -129,11 +129,6 @@ namespace ScottPlot
                 settings.dataBackend.DrawLinesPaired(pen, yErrs.ToArray());
         }
 
-        public override void SaveCSV(string filePath)
-        {
-            throw new NotImplementedException();
-        }
-
         public override string ToString()
         {
             return $"PlottableBar with {pointCount} points";

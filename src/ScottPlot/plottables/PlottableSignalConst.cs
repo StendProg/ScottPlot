@@ -15,8 +15,8 @@ namespace ScottPlot
     // - in x64 mode limit can be up to maximum array size (2G points) with special solution and 64 GB RAM (not tested)
     // - if source array is changed UpdateTrees() must be called
     // - source array can be change by call updateData(), updating by ranges much faster.
-    public class PlottableSignalConst<T> : Plottable where T : struct, IComparable
-    {
+    public class PlottableSignalConst<T> : Plottable, IExportable where T : struct, IComparable
+    {    
         // Any changes must be sync with PlottableSignal
         public T[] ys;
         public double sampleRate;
@@ -505,7 +505,7 @@ namespace ScottPlot
             return $"PlottableSignalConst with {pointCount} points ({typeof(T).Name}), trees {(TreesReady ? "" : "not")} calculated";
         }
 
-        public override void SaveCSV(string filePath)
+        public void SaveCSV(string filePath)
         {
             StringBuilder csv = new StringBuilder();
             for (int i = 0; i < ys.Length; i++)

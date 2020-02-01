@@ -8,7 +8,7 @@ using System.Linq.Expressions;
 
 namespace ScottPlot
 {
-    public class PlottableSignal : Plottable
+    public class PlottableSignal : Plottable, IExportable
     {
         // Any changes must be sync with PlottableSignalConst
         public double[] ys;
@@ -17,10 +17,14 @@ namespace ScottPlot
         public float markerSize;
         public double xOffset;
         public double yOffset;
+        public double lineWidth;
         public Pen pen;
         public Brush brush;
+        public int maxRenderIndex;
+        private Pen[] penByDensity;
+        private int densityLevelCount = 0;
 
-        public PlottableSignal(double[] ys, double sampleRate, double xOffset, double yOffset, Color color, double lineWidth, double markerSize, string label, bool useParallel)
+        public PlottableSignal(double[] ys, double sampleRate, double xOffset, double yOffset, Color color, double lineWidth, double markerSize, string label, bool useParallel, Color[] colorByDensity, int maxRenderIndex)
         {
             if (ys == null)
                 throw new Exception("Y data cannot be null");
@@ -32,8 +36,12 @@ namespace ScottPlot
             this.xOffset = xOffset;
             this.label = label;
             this.color = color;
+            this.lineWidth = lineWidth;
             this.yOffset = yOffset;
             this.useParallel = useParallel;
+            if ((maxRenderIndex > ys.Length - 1) || maxRenderIndex < 0)
+                throw new ArgumentException("maxRenderIndex must be a valid index for ys[]");
+            this.maxRenderIndex = maxRenderIndex;
             pointCount = ys.Length;
             brush = new SolidBrush(color);
             pen = new Pen(color, (float)lineWidth)
@@ -43,6 +51,18 @@ namespace ScottPlot
                 EndCap = System.Drawing.Drawing2D.LineCap.Round,
                 LineJoin = System.Drawing.Drawing2D.LineJoin.Round
             };
+
+            if (colorByDensity != null)
+            {
+                // turn the ramp into a pen triangle
+                densityLevelCount = colorByDensity.Length * 2 - 1;
+                penByDensity = new Pen[densityLevelCount];
+                for (int i = 0; i < colorByDensity.Length; i++)
+                {
+                    penByDensity[i] = new Pen(colorByDensity[i]);
+                    penByDensity[densityLevelCount - 1 - i] = new Pen(colorByDensity[i]);
+                }
+            }
         }
 
         public override string ToString()
@@ -52,11 +72,21 @@ namespace ScottPlot
 
         public override double[] GetLimits()
         {
+            double yMin = ys[0];
+            double yMax = ys[0];
+            for (int i = 0; i < maxRenderIndex; i++)
+            {
+                // TODO: ignore NaN
+                if (ys[i] < yMin) yMin = ys[i];
+                else if (ys[i] > yMax) yMax = ys[i];
+            }
+
             double[] limits = new double[4];
             limits[0] = 0 + xOffset;
-            limits[1] = samplePeriod * ys.Length + xOffset;
-            limits[2] = ys.Min() + yOffset;
-            limits[3] = ys.Max() + yOffset;
+            limits[1] = samplePeriod * maxRenderIndex + xOffset;
+            limits[2] = yMin + yOffset;
+            limits[3] = yMax + yOffset;
+
             return limits;
         }
 
@@ -75,6 +105,8 @@ namespace ScottPlot
             List<PointF> linePoints = new List<PointF>(visibleIndex2 - visibleIndex1 + 2);
             if (visibleIndex2 > ys.Length - 2)
                 visibleIndex2 = ys.Length - 2;
+            if (visibleIndex2 > maxRenderIndex)
+                visibleIndex2 = maxRenderIndex - 1;
             if (visibleIndex1 < 0)
                 visibleIndex1 = 0;
             for (int i = visibleIndex1; i <= visibleIndex2 + 1; i++)
@@ -140,6 +172,113 @@ namespace ScottPlot
             settings.dataBackend.DrawLines(pen, linePoints);
         }
 
+        private void RenderHighDensityDistribution(Settings settings, double offsetPoints, double columnPointCount)
+        {
+            int xPxStart = (int)Math.Ceiling((-1 - offsetPoints) / columnPointCount - 1);
+            int xPxEnd = (int)Math.Ceiling((ys.Length - offsetPoints) / columnPointCount);
+            xPxStart = Math.Max(0, xPxStart);
+            xPxEnd = Math.Min(settings.dataSize.Width, xPxEnd);
+            if (xPxStart >= xPxEnd)
+                return;
+            List<PointF> linePoints = new List<PointF>((xPxEnd - xPxStart) * 2 + 1);
+            List<PointF[]> linePointsLevels = new List<PointF[]>((xPxEnd - xPxStart) + 1);
+            for (int xPx = xPxStart; xPx < xPxEnd; xPx++)
+            {
+                // determine data indexes for this pixel column
+                int index1 = (int)(offsetPoints + columnPointCount * xPx);
+                int index2 = (int)(offsetPoints + columnPointCount * (xPx + 1));
+
+                if (index1 < 0)
+                    index1 = 0;
+                if (index1 > ys.Length - 1)
+                    index1 = ys.Length - 1;
+                if (index2 > ys.Length - 1)
+                    index2 = ys.Length - 1;
+
+                var indexes = Enumerable.Range(0, densityLevelCount + 1).Select(x => x * (index2 - index1 - 1) / (densityLevelCount));
+
+                var levelsValues = new ArraySegment<double>(ys, index1, index2 - index1)
+                    .OrderBy(x => x)
+                    .Where((y, i) => indexes.Contains(i));
+
+                var Points = levelsValues
+                    .Select(x => settings.GetPixel(0, x + yOffset).Y)
+                    .Select(y => new PointF(xPx, y))
+                    .ToArray();
+
+                linePointsLevels.Add(Points);
+            }
+            for (int i = 0; i < densityLevelCount; i++)
+            {
+                linePoints.Clear();
+                for (int j = 0; j < linePointsLevels.Count; j++)
+                {
+                    if (i + 1 < linePointsLevels[j].Length)
+                    {
+                        linePoints.Add(linePointsLevels[j][i]);
+                        linePoints.Add(linePointsLevels[j][i + 1]);
+                    }
+                }
+                settings.dataBackend.DrawLines(penByDensity[i], linePoints.ToArray());
+            }
+        }
+
+        private void RenderHighDensityDistributionParallel(Settings settings, double offsetPoints, double columnPointCount)
+        {
+            int xPxStart = (int)Math.Ceiling((-1 - offsetPoints) / columnPointCount - 1);
+            int xPxEnd = (int)Math.Ceiling((ys.Length - offsetPoints) / columnPointCount);
+            xPxStart = Math.Max(0, xPxStart);
+            xPxEnd = Math.Min(settings.dataSize.Width, xPxEnd);
+            if (xPxStart >= xPxEnd)
+                return;
+            List<PointF> linePoints = new List<PointF>((xPxEnd - xPxStart) * 2 + 1);
+
+            var levelValues = Enumerable.Range(xPxStart, xPxEnd - xPxStart)
+                .AsParallel()
+                .AsOrdered()
+                .Select(xPx =>
+                {
+                    // determine data indexes for this pixel column
+                    int index1 = (int)(offsetPoints + columnPointCount * xPx);
+                    int index2 = (int)(offsetPoints + columnPointCount * (xPx + 1));
+
+                    if (index1 < 0)
+                        index1 = 0;
+                    if (index1 > ys.Length - 1)
+                        index1 = ys.Length - 1;
+                    if (index2 > ys.Length - 1)
+                        index2 = ys.Length - 1;
+
+                    var indexes = Enumerable.Range(0, densityLevelCount + 1).Select(x => x * (index2 - index1 - 1) / (densityLevelCount));
+
+                    var levelsValues = new ArraySegment<double>(ys, index1, index2 - index1)
+                        .OrderBy(x => x)
+                        .Where((y, i) => indexes.Contains(i)).ToArray();
+                    return (xPx, levelsValues);
+                })
+                .ToArray();
+
+            List<PointF[]> linePointsLevels = levelValues
+                .Select(x => x.levelsValues
+                                .Select(y => new PointF(x.xPx, settings.GetPixel(0, y + yOffset).Y))
+                                .ToArray())
+                .ToList();
+
+            for (int i = 0; i < densityLevelCount; i++)
+            {
+                linePoints.Clear();
+                for (int j = 0; j < linePointsLevels.Count; j++)
+                {
+                    if (i + 1 < linePointsLevels[j].Length)
+                    {
+                        linePoints.Add(linePointsLevels[j][i]);
+                        linePoints.Add(linePointsLevels[j][i + 1]);
+                    }
+                }
+                settings.dataBackend.DrawLines(penByDensity[i], linePoints.ToArray());
+            }
+        }
+
         private void RenderHighDensity(Settings settings, double offsetPoints, double columnPointCount)
         {
             // this function is for when the graph is zoomed out so each pixel column represents the vertical span of multiple data points
@@ -163,6 +302,12 @@ namespace ScottPlot
                     index1 = ys.Length - 1;
                 if (index2 > ys.Length - 1)
                     index2 = ys.Length - 1;
+
+                // skip data above maxRenderIndex 
+                if (index1 > maxRenderIndex)
+                    continue;
+                if (index2 > maxRenderIndex)
+                    index2 = maxRenderIndex;
 
                 // get the min and max value for this column                
                 double lowestValue = ys[index1];
@@ -196,6 +341,10 @@ namespace ScottPlot
 
         public override void Render(Settings settings)
         {
+            pen.Color = color;
+            pen.Width = (float)lineWidth;
+            brush = new SolidBrush(color);
+
             double dataSpanUnits = ys.Length * samplePeriod;
             double columnSpanUnits = settings.axes.x.span / settings.dataSize.Width;
             double columnPointCount = (columnSpanUnits / dataSpanUnits) * ys.Length;
@@ -218,10 +367,20 @@ namespace ScottPlot
             }
             else if (pointsPerPixelColumn > 1)
             {
-                if (useParallel)
-                    RenderHighDensityParallel(settings, offsetPoints, columnPointCount);
+                if (densityLevelCount > 0 && pointsPerPixelColumn > densityLevelCount)
+                {
+                    if (useParallel)
+                        RenderHighDensityDistributionParallel(settings, offsetPoints, columnPointCount);
+                    else
+                        RenderHighDensityDistribution(settings, offsetPoints, columnPointCount);
+                }
                 else
-                    RenderHighDensity(settings, offsetPoints, columnPointCount);
+                {
+                    if (useParallel)
+                        RenderHighDensityParallel(settings, offsetPoints, columnPointCount);
+                    else
+                        RenderHighDensity(settings, offsetPoints, columnPointCount);
+                }
             }
             else
             {
@@ -229,7 +388,7 @@ namespace ScottPlot
             }
         }
 
-        public override void SaveCSV(string filePath)
+        public void SaveCSV(string filePath)
         {
             StringBuilder csv = new StringBuilder();
             for (int i = 0; i < ys.Length; i++)
