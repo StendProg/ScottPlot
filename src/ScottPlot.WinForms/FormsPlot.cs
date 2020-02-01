@@ -9,9 +9,9 @@ namespace ScottPlot
 
     public partial class FormsPlot : UserControl
     {
-        public readonly Plot plt;
+        public Plot plt;
         private readonly Settings settings;
-        private readonly bool isDesignerMode;
+        protected readonly bool isDesignerMode;
         public Cursor cursor = Cursors.Arrow;
 
         ContextMenuStrip rightClickMenu;
@@ -43,8 +43,8 @@ namespace ScottPlot
             PbPlot_SizeChanged(null, null);
         }
 
-        private bool currentlyRendering;
-        public void Render(bool skipIfCurrentlyRendering = false, bool lowQuality = false)
+        protected bool currentlyRendering;
+        public virtual void Render(bool skipIfCurrentlyRendering = false, bool lowQuality = false)
         {
             if (isDesignerMode)
                 return;
@@ -59,7 +59,7 @@ namespace ScottPlot
             }
         }
 
-        private void PbPlot_SizeChanged(object sender, EventArgs e)
+        protected void PbPlot_SizeChanged(object sender, EventArgs e)
         {
             plt?.Resize(Width, Height);
             Render(skipIfCurrentlyRendering: false);
@@ -95,7 +95,7 @@ namespace ScottPlot
         private Point mouseLocation;
         public PointF mouseCoordinates { get { return plt.CoordinateFromPixel(mouseLocation); } }
         double[] axisLimitsOnMouseDown;
-        private bool isMouseDragging
+        protected bool isMouseDragging
         {
             get
             {
@@ -111,7 +111,7 @@ namespace ScottPlot
         }
 
         PlottableAxLine draggingAxLine = null;
-        private void PbPlot_MouseDown(object sender, MouseEventArgs e)
+        protected void PbPlot_MouseDown(object sender, MouseEventArgs e)
         {
             draggingAxLine = settings.GetDraggableAxisLineUnderCursor(e.Location);
 
@@ -130,7 +130,7 @@ namespace ScottPlot
             }
         }
 
-        private void PbPlot_MouseMove(object sender, MouseEventArgs e)
+        protected void PbPlot_MouseMove(object sender, MouseEventArgs e)
         {
             mouseLocation = e.Location;
             OnMouseMoved(EventArgs.Empty);
@@ -194,7 +194,7 @@ namespace ScottPlot
                 pbPlot.Cursor = (axLineUnderCursor.vertical == true) ? Cursors.SizeWE : Cursors.SizeNS;
         }
 
-        private void PbPlot_MouseUp(object sender, MouseEventArgs e)
+        protected void PbPlot_MouseUp(object sender, MouseEventArgs e)
         {
             if (mouseMiddleDownLocation != null)
             {
@@ -253,9 +253,9 @@ namespace ScottPlot
             Render();
         }
 
-        private void PbPlot_MouseDoubleClick(object sender, MouseEventArgs e) { OnMouseDoubleClicked(); }
+        protected void PbPlot_MouseDoubleClick(object sender, MouseEventArgs e) { OnMouseDoubleClicked(); }
 
-        private void PbPlot_MouseWheel(object sender, MouseEventArgs e)
+        protected void PbPlot_MouseWheel(object sender, MouseEventArgs e)
         {
             double xFrac = (e.Delta > 0) ? 1.15 : 0.85;
             double yFrac = (e.Delta > 0) ? 1.15 : 0.85;

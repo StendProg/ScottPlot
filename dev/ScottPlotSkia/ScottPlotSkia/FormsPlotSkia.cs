@@ -56,7 +56,6 @@ namespace ScottPlotSkia
             glControl1.VSync = false;
             glControl1.Paint += new PaintEventHandler(this.GlControl1_Paint);
 
-            glControl1.MouseClick += PbPlot_MouseClick;
             glControl1.MouseDoubleClick += PbPlot_MouseDoubleClick;
             glControl1.MouseDown += PbPlot_MouseDown;
             glControl1.MouseMove += PbPlot_MouseMove;
@@ -75,21 +74,15 @@ namespace ScottPlotSkia
 
         public override void Render(bool skipIfCurrentlyRendering = false, bool lowQuality = false)
         {
-            if (designerMode)
-            {
-                base.Render();
+            if (isDesignerMode)
                 return;
-            }
-
-            if (lastInteractionTimer.Enabled)
-                lastInteractionTimer.Stop();
 
             if (!(skipIfCurrentlyRendering && currentlyRendering))
             {
                 currentlyRendering = true;
                 skiaBackend?.SetAntiAlias(!lowQuality);
                 glControl1?.Invalidate();
-                if (plt.mouseTracker.IsDraggingSomething())
+                if (isMouseDragging)
                     Application.DoEvents();
                 currentlyRendering = false;
             }
