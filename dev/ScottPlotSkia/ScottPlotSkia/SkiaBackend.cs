@@ -130,6 +130,10 @@ namespace ScottPlotSkia
                 point.Y += paint.TextSize / 2;
             canvas.DrawText(text, point.X, point.Y, paint);
         }
+        public void DrawString(string text, Font font, Brush brush, float x, float y, StringFormat format)
+        {
+            DrawString(text, font, brush, new PointF(x, y), format);
+        }
 
         public void DrawString(string text, Font font, Brush brush, PointF point)
         {

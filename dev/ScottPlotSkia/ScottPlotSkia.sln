@@ -3,11 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.28803.452
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScottPlot", "..\..\src\ScottPlot\ScottPlot.csproj", "{EE9215C6-01C1-4835-8514-3A708F9291F1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScottPlot", "..\..\src\ScottPlot\ScottPlot.csproj", "{EE9215C6-01C1-4835-8514-3A708F9291F1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScottPlotSkia", "ScottPlotSkia\ScottPlotSkia.csproj", "{EA9C6D01-8158-42DC-91B3-079EC2353839}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "signalConst with Skia", "plottable-const-skia\signalConst with Skia.csproj", "{078C3C46-CDF6-4FE0-9D3E-6D2CF8CA31A0}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScottPlot.WinForms", "..\..\src\ScottPlot.WinForms\ScottPlot.WinForms.csproj", "{404052C5-7BD1-4302-8883-2AB1A7A9EEC8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,6 +43,14 @@ Global
 		{078C3C46-CDF6-4FE0-9D3E-6D2CF8CA31A0}.Release|Any CPU.Build.0 = Release|Any CPU
 		{078C3C46-CDF6-4FE0-9D3E-6D2CF8CA31A0}.Release|x64.ActiveCfg = Release|x64
 		{078C3C46-CDF6-4FE0-9D3E-6D2CF8CA31A0}.Release|x64.Build.0 = Release|x64
+		{404052C5-7BD1-4302-8883-2AB1A7A9EEC8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{404052C5-7BD1-4302-8883-2AB1A7A9EEC8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{404052C5-7BD1-4302-8883-2AB1A7A9EEC8}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{404052C5-7BD1-4302-8883-2AB1A7A9EEC8}.Debug|x64.Build.0 = Debug|Any CPU
+		{404052C5-7BD1-4302-8883-2AB1A7A9EEC8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{404052C5-7BD1-4302-8883-2AB1A7A9EEC8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{404052C5-7BD1-4302-8883-2AB1A7A9EEC8}.Release|x64.ActiveCfg = Release|Any CPU
+		{404052C5-7BD1-4302-8883-2AB1A7A9EEC8}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -28,13 +28,8 @@
         /// </summary>
         private void InitializeComponent()
         {           
-            ((System.ComponentModel.ISupportInitialize)(this.lastInteractionTimer)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pbPlot)).BeginInit();
             this.SuspendLayout();
-            // 
-            // lastInteractionTimer
-            // 
-            this.lastInteractionTimer.Enabled = false;            
             // 
             // FormsPlotSkia
             // 
@@ -43,7 +38,6 @@
             
             this.Name = "FormsPlotSkia";
             this.Controls.SetChildIndex(this.pbPlot, 0);
-            ((System.ComponentModel.ISupportInitialize)(this.lastInteractionTimer)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pbPlot)).EndInit();
             this.ResumeLayout(false);
 
