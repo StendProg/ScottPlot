@@ -52,11 +52,19 @@ namespace ScottPlot
             {
                 topLeft = settings.GetPixel(position1, settings.axes.y.min);
                 lowerRight = settings.GetPixel(position2, settings.axes.y.max);
+                if (topLeft.X < 0)
+                    topLeft.X = 0;
+                if (lowerRight.X > settings.bmpData.Width)
+                    lowerRight.X = settings.bmpData.Width;
             }
             else
             {
                 topLeft = settings.GetPixel(settings.axes.x.min, position1);
                 lowerRight = settings.GetPixel(settings.axes.x.max, position2);
+                if (topLeft.Y > settings.bmpData.Height)
+                    topLeft.Y = settings.bmpData.Height;
+                if (lowerRight.Y < 0)
+                    lowerRight.Y = 0;
             }
 
             float width = lowerRight.X - topLeft.X + 1;
@@ -65,11 +73,6 @@ namespace ScottPlot
             float y = lowerRight.Y - 1;
 
             settings.dataBackend.FillRectangle(brush, x, y, width, height);
-        }
-
-        public override void SaveCSV(string filePath)
-        {
-            throw new NotImplementedException();
         }
     }
 }

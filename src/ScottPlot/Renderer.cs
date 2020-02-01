@@ -22,25 +22,28 @@ namespace ScottPlot
 
         public static void DataGrid(Settings settings)
         {
-            if (!settings.grid.visible)
-                return;
-
             Pen pen = new Pen(settings.grid.color);
 
-            for (int i = 0; i < settings.ticks.x.tickPositionsMajor.Length; i++)
+            if (settings.grid.enableVertical)
             {
-                double value = settings.ticks.x.tickPositionsMajor[i];
-                double unitsFromAxisEdge = value - settings.axes.x.min;
-                int xPx = (int)(unitsFromAxisEdge * settings.xAxisScale);
-                settings.dataBackend.DrawLine(pen, xPx, 0, xPx, settings.dataSize.Height);
+                for (int i = 0; i < settings.ticks.x.tickPositionsMajor.Length; i++)
+                {
+                    double value = settings.ticks.x.tickPositionsMajor[i];
+                    double unitsFromAxisEdge = value - settings.axes.x.min;
+                    int xPx = (int)(unitsFromAxisEdge * settings.xAxisScale);
+                    settings.dataBackend.DrawLine(pen, xPx, 0, xPx, settings.dataSize.Height);
+                }
             }
 
-            for (int i = 0; i < settings.ticks.y.tickPositionsMajor.Length; i++)
+            if (settings.grid.enableHorizontal)
             {
-                double value = settings.ticks.y.tickPositionsMajor[i];
-                double unitsFromAxisEdge = value - settings.axes.y.min;
-                int yPx = settings.dataSize.Height - (int)(unitsFromAxisEdge * settings.yAxisScale);
-                settings.dataBackend.DrawLine(pen, 0, yPx, settings.dataSize.Width, yPx);
+                for (int i = 0; i < settings.ticks.y.tickPositionsMajor.Length; i++)
+                {
+                    double value = settings.ticks.y.tickPositionsMajor[i];
+                    double unitsFromAxisEdge = value - settings.axes.y.min;
+                    int yPx = settings.dataSize.Height - (int)(unitsFromAxisEdge * settings.yAxisScale);
+                    settings.dataBackend.DrawLine(pen, 0, yPx, settings.dataSize.Width, yPx);
+                }
             }
         }
 
@@ -49,13 +52,16 @@ namespace ScottPlot
             for (int i = 0; i < settings.plottables.Count; i++)
             {
                 Plottable pltThing = settings.plottables[i];
-                try
+                if (pltThing.visible)
                 {
-                    pltThing.Render(settings);
-                }
-                catch (OverflowException)
-                {
-                    Debug.WriteLine($"OverflowException plotting: {pltThing}");
+                    try
+                    {
+                        pltThing.Render(settings);
+                    }
+                    catch (OverflowException)
+                    {
+                        Debug.WriteLine($"OverflowException plotting: {pltThing}");
+                    }
                 }
             }
         }
@@ -73,7 +79,13 @@ namespace ScottPlot
         {
             if (settings.figureBackend == null)
                 return;
-            if (settings.legend.location != ScottPlot.legendLocation.none)
+
+            int plottablesShownInLegend = 0;
+            foreach (var plottable in settings.plottables)
+                if (plottable.visible && plottable.label != null)
+                    plottablesShownInLegend += 1;
+
+            if (plottablesShownInLegend > 0 && settings.legend.location != ScottPlot.legendLocation.none)
             {
                 Point legendLocation = new Point(settings.dataOrigin.X + settings.legend.rect.Location.X,
                 settings.dataOrigin.Y + settings.legend.rect.Location.Y);
@@ -86,7 +98,7 @@ namespace ScottPlot
             settings.figureBackend.DrawImage(settings.dataBackend.GetBitmap(), settings.dataOrigin);
         }
 
-        public static void FigureLabels(Settings settings, bool drawDebugRectangles = false)
+        public static void FigureLabels(Settings settings)
         {
             if (settings.figureBackend == null)
                 return;
@@ -94,25 +106,42 @@ namespace ScottPlot
             int dataCenterX = settings.dataSize.Width / 2 + settings.dataOrigin.X;
             int dataCenterY = settings.dataSize.Height / 2 + settings.dataOrigin.Y;
 
-            // title
-            Point titlePoint = new Point(dataCenterX - (int)settings.title.width / 2, settings.layout.padOnAllSides);            
-            settings.figureBackend.DrawString(settings.title.text, settings.title.font, new SolidBrush(settings.title.color), titlePoint, settings.misc.sfNorthWest);
-            if (drawDebugRectangles)
-                settings.figureBackend.DrawRectangle(Pens.Magenta, titlePoint.X, titlePoint.Y, (int)settings.title.width, (int)settings.title.height);
+            if (settings.title.visible)
+            {
+                settings.figureBackend.DrawString(
+                        settings.title.text,
+                        settings.title.font,
+                        new SolidBrush(settings.title.color),
+                        settings.layout.title.Center,
+                        settings.misc.sfCenterCenter
+                    );
+            }
 
-            // horizontal axis label
-            Point xLabelPoint = new Point(dataCenterX - (int)settings.xLabel.width / 2, settings.figureSize.Height - settings.layout.padOnAllSides - (int)settings.xLabel.height);
-            settings.figureBackend.DrawString(settings.xLabel.text, settings.xLabel.font, new SolidBrush(settings.xLabel.color), xLabelPoint, settings.misc.sfNorthWest);
-            if (drawDebugRectangles)
-                settings.figureBackend.DrawRectangle(Pens.Magenta, xLabelPoint.X, xLabelPoint.Y, (int)settings.xLabel.width, (int)settings.xLabel.height);
+            if (settings.xLabel.visible)
+            {
+                settings.figureBackend.DrawString(
+                        settings.xLabel.text,
+                        settings.xLabel.font,
+                        new SolidBrush(settings.xLabel.color),
+                        settings.layout.xLabel.Center,
+                        settings.misc.sfCenterCenter
+                    );
+            }
 
-            // vertical axis label
-            Point yLabelPoint = new Point(-dataCenterY - (int)settings.yLabel.width / 2, settings.layout.padOnAllSides);
-            settings.figureBackend.RotateTransform(-90);
-            settings.figureBackend.DrawString(settings.yLabel.text, settings.yLabel.font, new SolidBrush(settings.yLabel.color), yLabelPoint, settings.misc.sfNorthWest);
-            if (drawDebugRectangles)
-                settings.figureBackend.DrawRectangle(Pens.Magenta, yLabelPoint.X, yLabelPoint.Y, (int)settings.yLabel.width, (int)settings.yLabel.height);
-            settings.figureBackend.ResetRotateTransform();
+            if (settings.yLabel.visible)
+            {
+                Point originalLocation = settings.layout.yLabel.Center;
+                Point rotatedLocation = new Point(-originalLocation.Y, settings.layout.yLabel.Width - originalLocation.X);
+                settings.figureBackend.RotateTransform(-90);
+                settings.figureBackend.DrawString(
+                        settings.yLabel.text,
+                        settings.yLabel.font,
+                        new SolidBrush(settings.yLabel.color),
+                        rotatedLocation,
+                        settings.misc.sfCenterCenter
+                    );
+                settings.figureBackend.ResetTransform();
+            }
         }
 
         public static void FigureTicks(Settings settings)
@@ -120,8 +149,8 @@ namespace ScottPlot
             if (settings.dataSize.Width < 1 || settings.dataSize.Height < 1)
                 return;
 
-            settings.ticks.x = new TickCollection(settings, false, settings.ticks.timeFormatX);
-            settings.ticks.y = new TickCollection(settings, true, settings.ticks.timeFormatY);
+            settings.ticks.x.Recalculate(settings);
+            settings.ticks.y.Recalculate(settings);
 
             RenderTicksOnLeft(settings);
             RenderTicksOnBottom(settings);
@@ -182,11 +211,18 @@ namespace ScottPlot
 
                 double unitsFromAxisEdge = value - settings.axes.y.min;
                 int xPx = settings.dataOrigin.X - 1;
-                int yPx = (int)(unitsFromAxisEdge * settings.yAxisScale);
-                yPx = settings.figureSize.Height - yPx - settings.layout.paddingBySide[2];
+                int yPx = settings.layout.data.bottom - (int)(unitsFromAxisEdge * settings.yAxisScale);
 
-                settings.figureBackend.DrawLine(pen, xPx, yPx, xPx - settings.ticks.size, yPx);
-                settings.figureBackend.DrawString(text, settings.ticks.font, brush, new PointF(xPx - settings.ticks.size, yPx), settings.misc.sfEast);
+                if (settings.ticks.rulerModeY)
+                {
+                    settings.figureBackend.DrawLine(pen, xPx, yPx, xPx - settings.ticks.size - settings.ticks.font.Height, yPx);
+                    settings.figureBackend.DrawString(text, settings.ticks.font, brush, xPx - settings.ticks.size, yPx, settings.misc.sfSouthEast);
+                }
+                else
+                {
+                    settings.figureBackend.DrawLine(pen, xPx, yPx, xPx - settings.ticks.size, yPx);
+                    settings.figureBackend.DrawString(text, settings.ticks.font, brush, xPx - settings.ticks.size, yPx, settings.misc.sfEast);
+                }
             }
 
             if (settings.ticks.displayYminor && settings.ticks.y.tickPositionsMinor != null)
@@ -195,8 +231,7 @@ namespace ScottPlot
                 {
                     double unitsFromAxisEdge = value - settings.axes.y.min;
                     int xPx = settings.dataOrigin.X - 1;
-                    int yPx = (int)(unitsFromAxisEdge * settings.yAxisScale);
-                    yPx = settings.figureSize.Height - yPx - settings.layout.paddingBySide[2];
+                    int yPx = settings.layout.data.bottom - (int)(unitsFromAxisEdge * settings.yAxisScale);
                     settings.figureBackend.DrawLine(pen, xPx, yPx, xPx - settings.ticks.size / 2, yPx);
                 }
             }
@@ -217,11 +252,19 @@ namespace ScottPlot
                 string text = settings.ticks.x.tickLabels[i];
 
                 double unitsFromAxisEdge = value - settings.axes.x.min;
-                int xPx = (int)(unitsFromAxisEdge * settings.xAxisScale) + settings.layout.paddingBySide[0];
-                int yPx = settings.figureSize.Height - settings.layout.paddingBySide[2];
+                int xPx = (int)(unitsFromAxisEdge * settings.xAxisScale) + settings.layout.data.left;
+                int yPx = settings.layout.data.bottom;
 
-                settings.figureBackend.DrawLine(pen, xPx, yPx, xPx, yPx + settings.ticks.size);
-                settings.figureBackend.DrawString(text, settings.ticks.font, brush, new PointF(xPx, yPx + settings.ticks.size), settings.misc.sfNorth);
+                if (settings.ticks.rulerModeX)
+                {
+                    settings.figureBackend.DrawLine(pen, xPx, yPx, xPx, yPx + settings.ticks.size + settings.ticks.font.Height);
+                    settings.figureBackend.DrawString(text, settings.ticks.font, brush, xPx, yPx + settings.ticks.size, settings.misc.sfNorthWest);
+                }
+                else
+                {
+                    settings.figureBackend.DrawLine(pen, xPx, yPx, xPx, yPx + settings.ticks.size);
+                    settings.figureBackend.DrawString(text, settings.ticks.font, brush, xPx, yPx + settings.ticks.size, settings.misc.sfNorth);
+                }
             }
 
             if (settings.ticks.displayXminor && settings.ticks.x.tickPositionsMinor != null)
@@ -229,8 +272,8 @@ namespace ScottPlot
                 foreach (var value in settings.ticks.x.tickPositionsMinor)
                 {
                     double unitsFromAxisEdge = value - settings.axes.x.min;
-                    int xPx = (int)(unitsFromAxisEdge * settings.xAxisScale) + settings.layout.paddingBySide[0];
-                    int yPx = settings.figureSize.Height - settings.layout.paddingBySide[2];
+                    int xPx = (int)(unitsFromAxisEdge * settings.xAxisScale) + settings.layout.data.left;
+                    int yPx = settings.layout.data.bottom;
                     settings.figureBackend.DrawLine(pen, xPx, yPx, xPx, yPx + settings.ticks.size / 2);
                 }
             }
@@ -261,20 +304,13 @@ namespace ScottPlot
 
         public static void MouseZoomRectangle(Settings settings)
         {
-            if (!settings.mouse.rectangleIsHappening)
-                return;
-
-            int[] xs = new int[] { settings.mouse.downMiddle.X, settings.mouse.currentLoc.X };
-            int[] ys = new int[] { settings.mouse.downMiddle.Y, settings.mouse.currentLoc.Y };
-            Rectangle rect = new Rectangle(xs.Min(), ys.Min(), xs.Max() - xs.Min(), ys.Max() - ys.Min());
-            rect.X -= settings.dataOrigin.X;
-            rect.Y -= settings.dataOrigin.Y;
-
-            Pen outline = new Pen(Color.FromArgb(100, 255, 0, 0));
-            Brush fill = new SolidBrush(Color.FromArgb(50, 255, 0, 0));
-
-            settings.dataBackend.DrawRectangle(outline, rect);
-            settings.dataBackend.FillRectangle(fill, rect);
+            if (settings.mouseMiddleRect != null)
+            {
+                Pen outline = new Pen(Color.FromArgb(100, 255, 0, 0));
+                Brush fill = new SolidBrush(Color.FromArgb(50, 255, 0, 0));
+                settings.dataBackend.DrawRectangle(outline, (Rectangle)settings.mouseMiddleRect);
+                settings.dataBackend.FillRectangle(fill, (Rectangle)settings.mouseMiddleRect);
+            }
         }
     }
 }

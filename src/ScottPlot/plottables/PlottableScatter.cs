@@ -7,12 +7,13 @@ using System.Drawing;
 
 namespace ScottPlot
 {
-    public class PlottableScatter : Plottable
+    public class PlottableScatter : Plottable, IExportable
     {
         public double[] xs;
         public double[] ys;
         public double[] errorX;
         public double[] errorY;
+        public double lineWidth;
         public float errorLineWidth;
         public float errorCapSize;
         public float markerSize;
@@ -44,6 +45,7 @@ namespace ScottPlot
             this.xs = xs;
             this.ys = ys;
             this.color = color;
+            this.lineWidth = lineWidth;
             this.markerSize = (float)markerSize;
             this.label = label;
             this.errorX = errorX;
@@ -156,16 +158,23 @@ namespace ScottPlot
             return limits;
         }
 
+        PointF[] points;
+        PointF[] pointsStep;
         public override void Render(Settings settings)
         {
-            PointF[] points = new PointF[xs.Length];
+            penLine.Color = color;
+            penLine.Width = (float)lineWidth;
+
+            if (points is null)
+                points = new PointF[xs.Length];
+
             for (int i = 0; i < xs.Length; i++)
                 points[i] = settings.GetPixel(xs[i], ys[i]);
-
-            PointF[] pointsStep = null;
+            
             if (stepDisplay)
             {
-                pointsStep = new PointF[xs.Length * 2 - 1];
+                if (pointsStep is null)
+                    pointsStep = new PointF[xs.Length * 2 - 1];
                 for (int i = 0; i < points.Length; i++)
                     pointsStep[i * 2] = points[i];
                 for (int i = 0; i < points.Length - 1; i++)
@@ -230,7 +239,7 @@ namespace ScottPlot
                 settings.dataBackend.DrawMarkers(points, markerShape, markerSize, color);
         }
 
-        public override void SaveCSV(string filePath)
+        public void SaveCSV(string filePath)
         {
             StringBuilder csv = new StringBuilder();
             for (int i = 0; i < ys.Length; i++)

@@ -1,0 +1,73 @@
+trigger:
+- master
+
+strategy:
+  matrix:
+    MacOS:
+      imageName: 'macOS-latest'
+    Linux:
+      imageName: 'ubuntu-latest'
+    Windows:
+      imageName: 'windows-latest'
+
+pool:
+  vmImage: $(imageName)
+
+variables:
+  buildConfiguration: 'Release'
+
+steps:
+
+### INSTALL NUGET AND RESTORE PACKAGES
+
+- task: NuGetToolInstaller@1
+  displayName: 'Install NuGet'
+
+- task: NuGetCommand@2
+  displayName: 'Full package restoration'
+  inputs:
+    restoreSolution: 'src/ScottPlotV4.sln'
+    
+### LIMITED BUILD (MacOS and Linux)
+    
+- task: DotNetCoreCLI@2
+  displayName: 'Limited build ScottPlot'
+  condition: not(contains(variables['agent.os'], 'Windows'))
+  inputs:
+    command: 'build'
+    projects: 'src/ScottPlotNoGUI.sln'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Limited build QuickStart'
+  condition: not(contains(variables['agent.os'], 'Windows'))
+  inputs:
+    command: 'build'
+    projects: 'doc/quickstart/ConsoleAppCore/ConsoleAppCore.csproj'
+
+### FULL BUILD (Windows)
+    
+- task: VSBuild@1
+  displayName: 'Full build ScottPlot'
+  condition: contains(variables['agent.os'], 'Windows')
+  inputs:
+    solution: 'src/ScottPlotV4.sln'
+    
+- task: NuGetCommand@2
+  displayName: 'Full restore QuickStart'
+  condition: contains(variables['agent.os'], 'Windows')
+  inputs:
+    restoreSolution: 'doc/quickstart/*/*.sln'
+    
+- task: VSBuild@1
+  displayName: 'Full build QuickStart'
+  condition: contains(variables['agent.os'], 'Windows')
+  inputs:
+    solution: 'doc/quickstart/*/*.sln'
+    
+### RUN TESTS
+
+- task: DotNetCoreCLI@2
+  displayName: 'Run Tests'
+  inputs:
+    command: test
+    projects: 'tests/ScottPlotTests.csproj'

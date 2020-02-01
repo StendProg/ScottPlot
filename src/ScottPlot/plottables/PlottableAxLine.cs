@@ -84,10 +84,5 @@ namespace ScottPlot
 
             settings.dataBackend.DrawLine(pen, pt1, pt2);
         }
-
-        public override void SaveCSV(string filePath)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

@@ -6,8 +6,7 @@ using System.Threading.Tasks;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
-using System.Windows.Forms;
-using System.Windows.Media.Imaging;
+using System.Diagnostics;
 
 namespace ScottPlot
 {
@@ -70,14 +69,10 @@ namespace ScottPlot
             return bytes;
         }
 
+        [Obsolete("use ScottPlot.Config.Fonts.GetValidFontName()", error: true)]
         public static string VerifyFont(string fontName)
         {
-            foreach (FontFamily font in System.Drawing.FontFamily.Families)
-            {
-                if (fontName.ToUpper() == font.Name.ToUpper())
-                    return font.Name;
-            }
-            throw new Exception($"Font not found: {fontName}");
+            return null;
         }
 
         public static string ScientificNotation(double value, int decimalPlaces = 2, bool preceedWithPlus = true)
@@ -119,28 +114,38 @@ namespace ScottPlot
             plt.YLabel("Sample Data");
         }
 
-        public static Bitmap DesignerModeBitmap(Size size)
+        public static double[] DateTimesToDoubles(DateTime[] dateTimeArray)
+        {
+            double[] positions = new double[dateTimeArray.Length];
+            for (int i = 0; i < positions.Length; i++)
+                positions[i] = dateTimeArray[i].ToOADate();
+            return positions;
+        }
+
+        [Obsolete]
+        public static Bitmap DesignerModeBitmap(Size size, bool drawArrows = false)
         {
             Bitmap bmp = new Bitmap(size.Width, size.Height);
 
+            Graphics gfx = Graphics.FromImage(bmp);
+            gfx.Clear(ColorTranslator.FromHtml("#003366"));
+            Brush brushLogo = new SolidBrush(ColorTranslator.FromHtml("#FFFFFF"));
+            Brush brushMeasurements = new SolidBrush(ColorTranslator.FromHtml("#006699"));
+            Pen pen = new Pen(ColorTranslator.FromHtml("#006699"), 3);
+            pen.StartCap = System.Drawing.Drawing2D.LineCap.Round;
+            pen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
+            float arrowSize = 7;
+            float padding = 3;
+
+            // logo
+            FontFamily ff = new FontFamily(Config.Fonts.GetDefaultFontName());
+            gfx.DrawString("ScottPlot", new Font(ff, 24, FontStyle.Bold), brushLogo, 10, 10);
+            var titleSize = gfx.MeasureString("ScottPlot", new Font(ff, 24, FontStyle.Bold));
+            gfx.DrawString($"version {GetVersionString()}", new Font(ff, 12, FontStyle.Italic), brushLogo, 12, (int)(10 + titleSize.Height * .7));
+
+            if (drawArrows)
             {
-                Graphics gfx = Graphics.FromImage(bmp);
-                gfx.Clear(ColorTranslator.FromHtml("#003366"));
-                Brush brushLogo = new SolidBrush(ColorTranslator.FromHtml("#FFFFFF"));
-                Brush brushMeasurements = new SolidBrush(ColorTranslator.FromHtml("#006699"));
-                Pen pen = new Pen(ColorTranslator.FromHtml("#006699"), 3);
-                pen.StartCap = System.Drawing.Drawing2D.LineCap.Round;
-                pen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
-                float arrowSize = 7;
-                float padding = 3;
-
-                // logo
-                FontFamily ff = new FontFamily(Tools.VerifyFont("Segoe UI"));
-                gfx.DrawString("ScottPlot", new Font(ff, 24, FontStyle.Bold), brushLogo, 10, 10);
-                var titleSize = gfx.MeasureString("ScottPlot", new Font(ff, 24, FontStyle.Bold));
-                gfx.DrawString($"version {GetVersionString()}", new Font(ff, 12, FontStyle.Italic), brushLogo, 12, (int)(10 + titleSize.Height * .7));
-
-                // horizontal line
+                // horizontal arrow
                 PointF left = new PointF(padding, size.Height / 2);
                 PointF leftA = new PointF(left.X + arrowSize, left.Y + arrowSize);
                 PointF leftB = new PointF(left.X + arrowSize, left.Y - arrowSize);
@@ -152,8 +157,11 @@ namespace ScottPlot
                 gfx.DrawLine(pen, left, leftB);
                 gfx.DrawLine(pen, right, rightA);
                 gfx.DrawLine(pen, right, rightB);
+                gfx.DrawString($"{size.Width}px",
+                    new Font(ff, 12, FontStyle.Bold), brushMeasurements,
+                    (float)(size.Width * .2), (float)(size.Height * .5));
 
-                // vertical line
+                // vertical arrow
                 PointF top = new PointF(size.Width / 2, padding);
                 PointF topA = new PointF(top.X - arrowSize, top.Y + arrowSize);
                 PointF topB = new PointF(top.X + arrowSize, top.Y + arrowSize);
@@ -165,12 +173,6 @@ namespace ScottPlot
                 gfx.DrawLine(pen, bot, botB);
                 gfx.DrawLine(pen, top, topA);
                 gfx.DrawLine(pen, top, topB);
-
-                // size text
-                gfx.DrawString($"{size.Width}px",
-                    new Font(ff, 12, FontStyle.Bold), brushMeasurements,
-                    (float)(size.Width * .2), (float)(size.Height * .5));
-
                 gfx.RotateTransform(-90);
                 gfx.DrawString($"{size.Height}px",
                     new Font(ff, 12, FontStyle.Bold), brushMeasurements,
@@ -178,31 +180,6 @@ namespace ScottPlot
             }
 
             return bmp;
-        }
-
-        public static BitmapImage bmpImageFromBmp(System.Drawing.Bitmap bmp)
-        {
-            System.IO.MemoryStream stream = new System.IO.MemoryStream();
-            ((System.Drawing.Bitmap)bmp).Save(stream, System.Drawing.Imaging.ImageFormat.Bmp);
-            BitmapImage bmpImage = new BitmapImage();
-            bmpImage.BeginInit();
-            stream.Seek(0, System.IO.SeekOrigin.Begin);
-            bmpImage.StreamSource = stream;
-            bmpImage.EndInit();
-            return bmpImage;
-        }
-
-        public static void SaveImageDialog(Plot plt)
-        {
-            SaveFileDialog savefile = new SaveFileDialog();
-            savefile.FileName = "ScottPlot.png";
-            savefile.Filter = "PNG Files (*.png)|*.png;*.png";
-            savefile.Filter += "|JPG Files (*.jpg, *.jpeg)|*.jpg;*.jpeg";
-            savefile.Filter += "|BMP Files (*.bmp)|*.bmp;*.bmp";
-            savefile.Filter += "|TIF files (*.tif, *.tiff)|*.tif;*.tiff";
-            savefile.Filter += "|All files (*.*)|*.*";
-            if (savefile.ShowDialog() == DialogResult.OK)
-                plt.SaveFig(savefile.FileName);
         }
 
         private static double[] DoubleArray<T>(T[] dataIn)
@@ -236,6 +213,14 @@ namespace ScottPlot
             double baselineAverage = baselineSum / (index2 - index1);
             for (int i = 0; i < data.Length; i++)
                 data[i] -= baselineAverage;
+        }
+
+        public static double[] Log10(double[] dataIn)
+        {
+            double[] dataOut = new double[dataIn.Length];
+            for (int i = 0; i < dataOut.Length; i++)
+                dataOut[i] = Math.Log10(dataIn[i]);
+            return dataOut;
         }
     }
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Linq;
 
 // TODO: move plottables to their own module
 // TODO: move mouse/axes interaction functions into the mouse module somehow
@@ -20,9 +21,9 @@ namespace ScottPlot
     public class Settings
     {
         // these properties get set at instantiation or after size or axis adjustments
-        public Size figureSize { get; private set; }
-        public Point dataOrigin { get; private set; }
-        public Size dataSize { get; private set; }
+        public Size figureSize { get { return layout.plot.Size; } }
+        public Point dataOrigin { get { return layout.data.Location; } }
+        public Size dataSize { get { return layout.data.Size; } }
 
         // Eventually move graphics objects to their own module.
         public IGraphicBackend figureBackend;
@@ -41,26 +42,75 @@ namespace ScottPlot
         public Config.Grid grid = new Config.Grid();
         public Config.Colors colors = new Config.Colors();
         public Config.Axes axes = new Config.Axes();
-        public Config.Layout layout = new Config.Layout();
+        public readonly Config.Layout layout = new Config.Layout();
         public Config.Ticks ticks = new Config.Ticks();
         public Config.Legend legend = new Config.Legend();
-        public Config.Mouse mouse = new Config.Mouse();
+
+        // mouse interaction
+        public Rectangle? mouseMiddleRect = null;
 
         // scales calculations must occur at this level because the axes are unaware of pixel dimensions
-        public double xAxisScale { get { return dataSize.Width / axes.x.span; } }
-        public double yAxisScale { get { return dataSize.Height / axes.y.span; } }
+        public double xAxisScale { get { return bmpData.Width / axes.x.span; } } // pixels per unit
+        public double yAxisScale { get { return bmpData.Height / axes.y.span; } } // pixels per unit
+        public double xAxisUnitsPerPixel { get { return 1.0 / xAxisScale; } }
+        public double yAxisUnitsPerPixel { get { return 1.0 / yAxisScale; } }
 
         // this has to be here because color module is unaware of plottables list
         public Color GetNextColor() { return colors.GetColor(plottables.Count); }
 
         public void Resize(int width, int height)
         {
-            // TODO: data origin should be calculated at render time, not now.
-            figureSize = new Size(width, height);
-            dataOrigin = new Point(layout.paddingBySide[0], layout.paddingBySide[3]);
-            int dataWidth = figureSize.Width - layout.paddingBySide[0] - layout.paddingBySide[1];
-            int dataHeight = figureSize.Height - layout.paddingBySide[2] - layout.paddingBySide[3];
-            dataSize = new Size(dataWidth, dataHeight);
+            layout.Update(width, height);
+        }
+
+        public void TightenLayout(int padLeft = 15, int padRight = 15, int padBottom = 15, int padTop = 15)
+        {
+            // update the layout with sizes based on configuration in settings
+
+            layout.titleHeight = (int)title.size.Height + 3;
+
+            // disable y2 label and scale by default
+            layout.y2LabelWidth = 0;
+            layout.y2ScaleWidth = 0;
+
+            layout.yLabelWidth = (int)yLabel.size.Height + 3;
+            layout.xLabelHeight = (int)xLabel.size.Height + 3;
+
+            // automatically increase yScale size to accomodate wide ticks
+            if (ticks?.y?.maxLabelSize.Width > layout.yScaleWidth)
+                layout.yScaleWidth = (int)ticks.y.maxLabelSize.Width;
+
+            // automatically increase xScale size to accomodate high ticks
+            if (ticks?.x?.maxLabelSize.Height > layout.xScaleHeight)
+                layout.xScaleHeight = (int)ticks.x.maxLabelSize.Height;
+
+            // collapse things that are hidden or empty
+            if (!ticks.displayXmajor)
+                layout.xScaleHeight = 0;
+            if (!ticks.displayYmajor)
+                layout.yScaleWidth = 0;
+            if (title.text == "")
+                layout.titleHeight = 0;
+            if (yLabel.text == "")
+                layout.yLabelWidth = 0;
+            if (xLabel.text == "")
+                layout.xLabelHeight = 0;
+
+            // eliminate all right-side pixels if right-frame is not drawn
+            if (!layout.displayFrameByAxis[1])
+            {
+                layout.yLabelWidth = 0;
+                layout.y2ScaleWidth = 0;
+            }
+
+            // expand edges to accomodate argument padding
+            layout.yLabelWidth = Math.Max(layout.yLabelWidth, padLeft);
+            layout.y2LabelWidth = Math.Max(layout.y2LabelWidth, padRight);
+            layout.xLabelHeight = Math.Max(layout.xLabelHeight, padBottom);
+            layout.titleHeight = Math.Max(layout.titleHeight, padTop);
+
+            layout.Update(figureSize.Width, figureSize.Height);
+            layout.tighteningOccurred = true;
         }
 
         public void AxesPanPx(int dxPx, int dyPx)
@@ -71,7 +121,7 @@ namespace ScottPlot
             axes.y.Pan((double)dyPx / yAxisScale);
         }
 
-        private void AxesZoomPx(int xPx, int yPx)
+        public void AxesZoomPx(int xPx, int yPx)
         {
             double dX = (double)xPx / xAxisScale;
             double dY = (double)yPx / yAxisScale;
@@ -82,96 +132,47 @@ namespace ScottPlot
 
         public void AxisAuto(double horizontalMargin = .1, double verticalMargin = .1, bool xExpandOnly = false, bool yExpandOnly = false)
         {
-            // separately adjust on plottables vs. axis lines
-            List<Plottable> plottables2d = new List<Plottable>();
-            List<PlottableAxLine> axisLines = new List<PlottableAxLine>();
-            foreach (Plottable plottable in plottables)
-            {
-                if (plottable is PlottableAxLine axLine)
-                    axisLines.Add(axLine);
-                else
-                    plottables2d.Add(plottable);
-            }
+            // separately deal with 2d plots and axis lines
+            var axisLines = plottables.Where(item => item is PlottableAxLine).ToArray();
+            var plottables2d = plottables.Except(axisLines).ToArray();
 
-            // expand on non-axis lines first
-            if (plottables2d.Count == 0)
+            // expand to include 2D plots first
+            if (plottables2d.Length == 0)
             {
                 axes.Set(-10, 10, -10, 10);
             }
             else
             {
-                axes.Set(plottables[0].GetLimits());
-                foreach (Plottable plottable in plottables)
-                {
-                    if (!(plottable is PlottableAxLine axLine))
-                        axes.Expand(plottable.GetLimits());
-                }
+                axes.Set(plottables2d[0].GetLimits());
+                foreach (Plottable plottable in plottables2d)
+                    axes.Expand(plottable.GetLimits(), xExpandOnly, yExpandOnly);
             }
 
-            // expand on axis lines last
-            foreach (Plottable plottable in plottables)
+            // special case for 2d plots with no width
+            if (axes.x.span == 0)
             {
-                if (plottable is PlottableAxLine axLine)
-                {
-                    var axl = (PlottableAxLine)plottable;
-                    double[] limits = plottable.GetLimits();
-                    if (axl.vertical)
-                    {
-                        limits[2] = axes.y.min;
-                        limits[3] = axes.y.max;
-                    }
-                    else
-                    {
-                        limits[0] = axes.x.min;
-                        limits[1] = axes.x.max;
-                    }
-                    axes.Expand(limits);
-                }
+                axes.x.min -= 1.5;
+                axes.x.max += 1.5;
+            }
+
+            // special case for 2d plots with no height
+            if (axes.y.span == 0)
+            {
+                axes.y.min -= 1.5;
+                axes.y.max += 1.5;
+            }
+
+            // expand to include axis lines
+            foreach (PlottableAxLine axisLine in axisLines)
+            {
+                double[] axisLimits = axes.limits;
+                if (axisLine.vertical)
+                    axes.Expand(new double[] { axes.limits[0], axes.limits[1], axes.y.min, axes.y.max });
+                else
+                    axes.Expand(new double[] { axes.x.min, axes.x.max, axes.limits[2], axes.limits[3] });
             }
 
             axes.Zoom(1 - horizontalMargin, 1 - verticalMargin);
-        }
-
-        public void MouseDown(int cusorPosX, int cursorPosY, bool panning = false, bool zooming = false)
-        {
-            mouse.downLoc = new Point(cusorPosX, cursorPosY);
-            mouse.isPanning = panning;
-            mouse.isZooming = zooming;
-            Array.Copy(axes.limits, mouse.downLimits, 4);
-        }
-
-        public void MouseMoveAxis(int cursorPosX, int cursorPosY, bool lockVertical, bool lockHorizontal)
-        {
-            if (mouse.isPanning == false && mouse.isZooming == false)
-                return;
-
-            axes.Set(mouse.downLimits);
-
-            int dX = cursorPosX - mouse.downLoc.X;
-            int dY = cursorPosY - mouse.downLoc.Y;
-
-            if (lockVertical)
-                dY = 0;
-            if (lockHorizontal)
-                dX = 0;
-
-            if (mouse.isPanning)
-                AxesPanPx(-dX, dY);
-
-            if (mouse.isZooming)
-                AxesZoomPx(dX, -dY);
-        }
-
-        public void MouseUpAxis()
-        {
-            mouse.isPanning = false;
-            mouse.isZooming = false;
-        }
-
-        public void MouseZoomRectMove(Point eLocation)
-        {
-            mouse.currentLoc = eLocation;
-            mouse.rectangleIsHappening = true;
         }
 
         public PointF GetPixel(double locationX, double locationY)
@@ -226,6 +227,39 @@ namespace ScottPlot
             {
                 plottables.RemoveAt(indicesToDelete[i]);
             }
+
+            axes.x.hasBeenSet = false;
+            axes.y.hasBeenSet = false;
+        }
+
+        public PlottableAxLine GetDraggableAxisLineUnderCursor(Point eLocation)
+        {
+            // adjust pixel location to correspond to data frame
+            eLocation.X -= dataOrigin.X;
+            eLocation.Y -= dataOrigin.Y;
+
+            for (int i = 0; i < plottables.Count; i++)
+            {
+                if (plottables[i] is PlottableAxLine axLine)
+                {
+                    if (axLine.draggable == false)
+                        continue;
+
+                    if (axLine.vertical == true)
+                    {
+                        PointF linePosPx = GetPixel(axLine.position, 0);
+                        if (Math.Abs(linePosPx.X - eLocation.X) < 5)
+                            return axLine;
+                    }
+                    else
+                    {
+                        PointF linePosPx = GetPixel(0, axLine.position);
+                        if (Math.Abs(linePosPx.Y - eLocation.Y) < 5)
+                            return axLine;
+                    }
+                }
+            }
+            return null;
         }
     }
 }
