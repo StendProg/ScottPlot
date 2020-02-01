@@ -54,15 +54,15 @@ namespace ScottPlot
                 lowerRight = settings.GetPixel(position2, settings.axes.y.max);
                 if (topLeft.X < 0)
                     topLeft.X = 0;
-                if (lowerRight.X > settings.bmpData.Width)
-                    lowerRight.X = settings.bmpData.Width;
+                if (lowerRight.X > settings.dataSize.Width)
+                    lowerRight.X = settings.dataSize.Width;
             }
             else
             {
                 topLeft = settings.GetPixel(settings.axes.x.min, position1);
                 lowerRight = settings.GetPixel(settings.axes.x.max, position2);
-                if (topLeft.Y > settings.bmpData.Height)
-                    topLeft.Y = settings.bmpData.Height;
+                if (topLeft.Y > settings.dataSize.Height)
+                    topLeft.Y = settings.dataSize.Height;
                 if (lowerRight.Y < 0)
                     lowerRight.Y = 0;
             }

@@ -51,7 +51,7 @@ namespace ScottPlot
                 // hide the version info
                 mainGrid.RowDefinitions[0].Height = new GridLength(0);
                 CanvasPlot_SizeChanged(null, null);
-                dpiScale = settings.gfxFigure.DpiX / 96;
+                dpiScale = settings.figureBackend.DpiX / 96;
             }
         }
 

@@ -8,7 +8,7 @@
     <OutputType>WinExe</OutputType>
     <RootNamespace>plottable_const</RootNamespace>
     <AssemblyName>plottableConst</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <NuGetPackageImportStamp>

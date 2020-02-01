@@ -140,7 +140,7 @@ namespace ScottPlot
                         rotatedLocation,
                         settings.misc.sfCenterCenter
                     );
-                settings.figureBackend.ResetTransform();
+                settings.figureBackend.ResetRotateTransform();
             }
         }
 

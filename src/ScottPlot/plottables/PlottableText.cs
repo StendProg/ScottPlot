@@ -98,10 +98,5 @@ namespace ScottPlot
 
             settings.dataBackend.DrawString(text, font, brush, textLocationPoint);
         }
-
-        public override void SaveCSV(string filePath)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

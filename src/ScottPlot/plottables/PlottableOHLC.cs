@@ -163,10 +163,5 @@ namespace ScottPlot
             settings.dataBackend.DrawLinesPaired(penUp, ohlcsHigher.ToArray());
             settings.dataBackend.DrawLinesPaired(penDown, ohlcsLower.ToArray());
         }
-
-        public override void SaveCSV(string filePath)
-        {
-            throw new NotImplementedException();
-        }
     }
 }
