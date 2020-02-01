@@ -10,7 +10,7 @@ namespace ScottPlot
     public partial class FormsPlot : UserControl
     {
         public Plot plt;
-        private readonly Settings settings;
+        protected Settings settings;
         protected readonly bool isDesignerMode;
         public Cursor cursor = Cursors.Arrow;
 
