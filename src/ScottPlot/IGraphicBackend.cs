@@ -41,6 +41,7 @@ namespace ScottPlot
         void FillPolygon(Brush brush, PointF[] curvePoints);
         void DrawPolygon(Pen pen, PointF[] curvePoints);
         void DrawString(string text, Font font, Brush brush, PointF point, StringFormat format);
+        void DrawString(string text, Font font, Brush brush, float x, float y, StringFormat format);
         void DrawString(string text, Font font, Brush brush, PointF point);
         SizeF MeasureString(string text, Font font);
         void DrawMarkers(PointF[] points, MarkerShape shape, float markerSize, Color color);

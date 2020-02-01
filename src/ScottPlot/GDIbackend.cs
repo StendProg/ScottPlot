@@ -176,6 +176,11 @@ namespace ScottPlot
             gfx.DrawString(text, font, brush, point, format);
         }
 
+        public void DrawString(string text, Font font, Brush brush, float x, float y, StringFormat format)
+        {
+            gfx.DrawString(text, font, brush, x, y, format);
+        }
+
         public void DrawString(string text, Font font, Brush brush, PointF point)
         {
             gfx.DrawString(text, font, brush, point);
