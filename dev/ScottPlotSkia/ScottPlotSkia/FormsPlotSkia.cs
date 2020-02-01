@@ -69,6 +69,8 @@ namespace ScottPlotSkia
             figureBackend = new SkiaBackend();
             plt = new Plot(backendFigure: figureBackend, backendData: skiaBackend, backendLegend: legendBackend);
             plt.Style(ScottPlot.Style.Control);
+            settings = plt.GetSettings();
+            PbPlot_MouseUp(null, null);
             PbPlot_SizeChanged(null, null);
         }
 
