@@ -3,8 +3,10 @@ using ScottPlotDemos;
 using ScottPlotSkia;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Windows.Forms;
 
 namespace WinformsSkiaDemosLauncher
 {
@@ -14,10 +16,16 @@ namespace WinformsSkiaDemosLauncher
         {
             var harmony = HarmonyInstance.Create("DemosUseSkiaControlPatch");
 
-            var original = typeof(FormPlotTypes).GetMethod("InitializeComponent", BindingFlags.NonPublic | BindingFlags.Instance);
+            var demosAssembly = typeof(FormMain).GetTypeInfo().Assembly;
+            var formsInDemos = demosAssembly.GetTypes().Where(x => x.IsSubclassOf(typeof(Form)));
+
             var transpiler = typeof(Program).GetMethod("Transpiler");
 
-            harmony.Patch(original, null, null, new HarmonyMethod(transpiler));
+            foreach (var fType in formsInDemos)
+            {
+                var original = fType.GetMethod("InitializeComponent", BindingFlags.NonPublic | BindingFlags.Instance);
+                harmony.Patch(original, null, null, new HarmonyMethod(transpiler));
+            }
 
             FormMain form = new FormMain();
             form.ShowDialog();
