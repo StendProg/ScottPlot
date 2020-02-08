@@ -27,6 +27,8 @@ namespace WinformsSkiaDemosLauncher
                 harmony.Patch(original, null, null, new HarmonyMethod(transpiler));
             }
 
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
             FormMain form = new FormMain();
             form.ShowDialog();
         }
