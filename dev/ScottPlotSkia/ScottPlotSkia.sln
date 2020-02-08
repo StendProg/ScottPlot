@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScottPlot.WinForms", "..\..
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinForms", "..\..\demos\WinForms\WinForms.csproj", "{131209BD-82D1-4D8E-A253-BD264563B4D5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinformsSkiaDemosLauncher", "WinformsSkiaDemosLauncher\WinformsSkiaDemosLauncher.csproj", "{7A174379-EE6D-4C79-BB89-D92367D0A2E2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -61,6 +63,14 @@ Global
 		{131209BD-82D1-4D8E-A253-BD264563B4D5}.Release|Any CPU.Build.0 = Release|Any CPU
 		{131209BD-82D1-4D8E-A253-BD264563B4D5}.Release|x64.ActiveCfg = Release|Any CPU
 		{131209BD-82D1-4D8E-A253-BD264563B4D5}.Release|x64.Build.0 = Release|Any CPU
+		{7A174379-EE6D-4C79-BB89-D92367D0A2E2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7A174379-EE6D-4C79-BB89-D92367D0A2E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7A174379-EE6D-4C79-BB89-D92367D0A2E2}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{7A174379-EE6D-4C79-BB89-D92367D0A2E2}.Debug|x64.Build.0 = Debug|Any CPU
+		{7A174379-EE6D-4C79-BB89-D92367D0A2E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7A174379-EE6D-4C79-BB89-D92367D0A2E2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7A174379-EE6D-4C79-BB89-D92367D0A2E2}.Release|x64.ActiveCfg = Release|Any CPU
+		{7A174379-EE6D-4C79-BB89-D92367D0A2E2}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
