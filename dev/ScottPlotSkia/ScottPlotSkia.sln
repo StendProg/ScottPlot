@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "signalConst with Skia", "pl
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScottPlot.WinForms", "..\..\src\ScottPlot.WinForms\ScottPlot.WinForms.csproj", "{404052C5-7BD1-4302-8883-2AB1A7A9EEC8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinForms", "..\..\demos\WinForms\WinForms.csproj", "{131209BD-82D1-4D8E-A253-BD264563B4D5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +53,14 @@ Global
 		{404052C5-7BD1-4302-8883-2AB1A7A9EEC8}.Release|Any CPU.Build.0 = Release|Any CPU
 		{404052C5-7BD1-4302-8883-2AB1A7A9EEC8}.Release|x64.ActiveCfg = Release|Any CPU
 		{404052C5-7BD1-4302-8883-2AB1A7A9EEC8}.Release|x64.Build.0 = Release|Any CPU
+		{131209BD-82D1-4D8E-A253-BD264563B4D5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{131209BD-82D1-4D8E-A253-BD264563B4D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{131209BD-82D1-4D8E-A253-BD264563B4D5}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{131209BD-82D1-4D8E-A253-BD264563B4D5}.Debug|x64.Build.0 = Debug|Any CPU
+		{131209BD-82D1-4D8E-A253-BD264563B4D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{131209BD-82D1-4D8E-A253-BD264563B4D5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{131209BD-82D1-4D8E-A253-BD264563B4D5}.Release|x64.ActiveCfg = Release|Any CPU
+		{131209BD-82D1-4D8E-A253-BD264563B4D5}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
