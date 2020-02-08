@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ScottPlotDemos;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,6 +11,8 @@ namespace WinformsSkiaDemosLauncher
     {
         static void Main(string[] args)
         {
+            FormMain form = new FormMain();
+            form.ShowDialog();
         }
     }
 }
