@@ -21,11 +21,14 @@ namespace WinformsSkiaDemosLauncher
 
             var transpiler = typeof(Program).GetMethod("Transpiler");
 
+            Console.WriteLine("Patching demos");
             foreach (var fType in formsInDemos)
             {
                 var original = fType.GetMethod("InitializeComponent", BindingFlags.NonPublic | BindingFlags.Instance);
                 harmony.Patch(original, null, null, new HarmonyMethod(transpiler));
+                Console.WriteLine($"\t{fType} - patched");
             }
+            Console.WriteLine("Run demos");
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
