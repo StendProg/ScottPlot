@@ -68,11 +68,19 @@ namespace ScottPlot
 
         public static void CreateLegendBitmap(Settings settings)
         {
-            settings.legendBackend.SetDrawRect(new Rectangle(settings.legend.rect.Location.X + settings.dataOrigin.X,
-                settings.legend.rect.Location.Y + settings.dataOrigin.Y,
-                settings.legend.rect.Width, settings.legend.rect.Height));
-            LegendTools.DrawLegend(settings);
-            settings.legendBackend.ClearDrawRect();
+            int plottablesShownInLegend = 0;
+            foreach (var plottable in settings.plottables)
+                if (plottable.visible && plottable.label != null)
+                    plottablesShownInLegend += 1;
+
+            if (plottablesShownInLegend > 0 && settings.legend.location != ScottPlot.legendLocation.none)
+            {
+                settings.legendBackend.SetDrawRect(new Rectangle(settings.legend.rect.Location.X + settings.dataOrigin.X,
+                  settings.legend.rect.Location.Y + settings.dataOrigin.Y,
+                  settings.legend.rect.Width, settings.legend.rect.Height));
+                LegendTools.DrawLegend(settings);
+                settings.legendBackend.ClearDrawRect();
+            }
         }
 
         public static void PlaceLegendOntoFigure(Settings settings)
