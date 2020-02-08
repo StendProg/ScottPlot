@@ -46,9 +46,11 @@ namespace ScottPlotSkia
             canvas.RestoreToCount(rotateState);
         }
 
+        private Font watermarkFont= new Font("Arial", 8, FontStyle.Regular);
         public void Clear(Color color)
         {
             canvas.Clear(color.ToSKColor());
+            DrawString("SkiaControl", watermarkFont, Brushes.LightGray, new PointF(0,0));
         }
 
         public void FillCircles(Brush brush, PointF[] points, float radius)
