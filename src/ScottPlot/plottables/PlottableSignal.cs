@@ -120,6 +120,40 @@ namespace ScottPlot
                     settings.gfxData.FillEllipse(brush, point.X - markerSize / 2, point.Y - markerSize / 2, markerSize, markerSize);
             }
         }
+        Func<double, double> func = (x) => 50 * Math.Sin(x / 100);
+        private void RenderHighDensityFunctional(Settings settings, double offsetPoints, double columnPointCount)
+        {
+            int xPxStart = settings.dataOrigin.X;
+            int xPxEnd = settings.dataOrigin.X + settings.dataSize.Width;
+
+            PointF[] linePoints = new PointF[(xPxEnd - xPxStart) * 2];
+            for (int xPx = xPxStart; xPx < xPxEnd; xPx++)
+            {
+                double x = settings.GetLocation(xPx, 0).X;
+                double xnext = settings.GetLocation(xPx + 1, 0).X;
+                var yValues = Enumerable.Range(0, 100).Select(i => func(x + (xnext - x) / 100 * i));
+
+                float ymin = (float)yValues.Min();
+                float ymax = (float)yValues.Max();
+
+                linePoints[(xPx - xPxStart) * 2] = settings.GetPixel(x, ymin);
+                linePoints[(xPx - xPxStart) * 2 + 1] = settings.GetPixel(x, ymax);
+            }
+
+            // adjust order of points to enhance anti-aliasing
+            PointF buf;
+            for (int i = 1; i < linePoints.Length / 2; i++)
+            {
+                if (linePoints[i * 2].Y >= linePoints[i * 2 - 1].Y)
+                {
+                    buf = linePoints[i * 2];
+                    linePoints[i * 2] = linePoints[i * 2 + 1];
+                    linePoints[i * 2 + 1] = buf;
+                }
+            }
+
+            settings.gfxData.DrawLines(pen, linePoints);
+        }
 
         private void RenderHighDensityParallel(Settings settings, double offsetPoints, double columnPointCount)
         {
@@ -360,7 +394,11 @@ namespace ScottPlot
             PointF firstPoint = settings.GetPixel(xOffset, ys[0] + yOffset);
             PointF lastPoint = settings.GetPixel(samplePeriod * (ys.Length - 1) + xOffset, ys[ys.Length - 1] + yOffset);
             double dataWidthPx = lastPoint.X - firstPoint.X;
-
+            if (func != null)
+            {
+                RenderHighDensityFunctional(settings, offsetPoints, columnPointCount);
+                return;
+            }
             // use different rendering methods based on how dense the data is on screen
             if ((dataWidthPx <= 1) || (dataWidthPx2 <= 1))
             {
