@@ -120,13 +120,13 @@ namespace ScottPlot
 
                 int whiskerSpread = (int)Math.Floor(boxWidth / 5);
 
-                settings.gfxData.DrawLine(pen, topWhisker.X, topWhisker.Y, middleX, topLeft.Y);//Whisker Centre
-                settings.gfxData.DrawLine(pen, bottomWhisker.X, bottomWhisker.Y, middleX, bottomLeft.Y);//Whisker Centre
-                settings.gfxData.DrawLine(pen, bottomWhisker.X - whiskerSpread, bottomWhisker.Y, bottomWhisker.X + whiskerSpread, bottomWhisker.Y);//Whisker Cap
-                settings.gfxData.DrawLine(pen, topWhisker.X - whiskerSpread, topWhisker.Y, topWhisker.X + whiskerSpread, topWhisker.Y);//Whisker Cap
+                settings.dataBackend.DrawLine(pen, topWhisker.X, topWhisker.Y, middleX, topLeft.Y);//Whisker Centre
+                settings.dataBackend.DrawLine(pen, bottomWhisker.X, bottomWhisker.Y, middleX, bottomLeft.Y);//Whisker Centre
+                settings.dataBackend.DrawLine(pen, bottomWhisker.X - whiskerSpread, bottomWhisker.Y, bottomWhisker.X + whiskerSpread, bottomWhisker.Y);//Whisker Cap
+                settings.dataBackend.DrawLine(pen, topWhisker.X - whiskerSpread, topWhisker.Y, topWhisker.X + whiskerSpread, topWhisker.Y);//Whisker Cap
 
-                settings.gfxData.DrawRectangle(pen, topLeft.X, topLeft.Y, (int)boxWidth, (int)Math.Round((Q3 - Q1) * settings.yAxisScale));//Box
-                settings.gfxData.DrawLine(pen, topLeft.X, medianLine.Y, (int)boxWidth + topLeft.X, medianLine.Y);//Median
+                settings.dataBackend.DrawRectangle(pen, topLeft.X, topLeft.Y, (int)boxWidth, (int)Math.Round((Q3 - Q1) * settings.yAxisScale));//Box
+                settings.dataBackend.DrawLine(pen, topLeft.X, medianLine.Y, (int)boxWidth + topLeft.X, medianLine.Y);//Median
 
                 List<double> allOutliers = lowOutliers;
                 allOutliers.AddRange(highOutliers);
@@ -136,7 +136,7 @@ namespace ScottPlot
                     PointF point = settings.GetPixel(0, curr);
                     point.X = middleX;
 
-                    MarkerTools.DrawMarker(settings.gfxData, point, markerShape, (float)lineWidth * 3, color);//Outliers
+                    MarkerTools.DrawMarker(settings.dataBackend, point, markerShape, (float)lineWidth * 3, color);//Outliers
                 }
 
             }
