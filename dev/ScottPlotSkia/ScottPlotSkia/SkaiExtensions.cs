@@ -65,7 +65,7 @@ namespace ScottPlotSkia
             result.StrokeCap = pen.StartCap.ToSKStrokeCap();
             result.StrokeMiter = pen.MiterLimit;
             result.IsAntialias = AntiAlias;
-            if (pen.DashStyle != DashStyle.Solid)
+            if (pen.DashStyle != DashStyle.Solid && pen.DashPattern.Length != 1)
             {
                 result.PathEffect = SKPathEffect.CreateDash(pen.DashPattern.Select(x => x * pen.Width).ToArray(), 0);
             }
