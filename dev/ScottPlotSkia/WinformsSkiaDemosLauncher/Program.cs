@@ -38,15 +38,17 @@ namespace WinformsSkiaDemosLauncher
 
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
+            int PatchedCount = 0;
             foreach (var instruction in instructions)
             {
                 if (instruction.opcode == OpCodes.Newobj)
                 {
                     var operand = instruction.operand as ConstructorInfo;
-                    if (operand.DeclaringType.Name == "FormsPlot")
+                    if (operand.DeclaringType.Name == "FormsPlot" && PatchedCount == 0)
                     {
                         // replace {new FormsPlot()} with {new FormsPlotSkia()}
                         instruction.operand = typeof(FormsPlotSkia).GetConstructor(new Type[] { });
+                        PatchedCount++;
                     }
                 }
                 yield return instruction;
