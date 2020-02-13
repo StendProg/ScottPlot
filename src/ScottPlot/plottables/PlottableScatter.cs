@@ -69,40 +69,15 @@ namespace ScottPlot
 
             penLine = new Pen(color, (float)lineWidth)
             {
-                // this prevents sharp corners
                 StartCap = System.Drawing.Drawing2D.LineCap.Round,
                 EndCap = System.Drawing.Drawing2D.LineCap.Round,
-                LineJoin = System.Drawing.Drawing2D.LineJoin.Round
+                LineJoin = System.Drawing.Drawing2D.LineJoin.Round,
+                DashStyle = StyleTools.DashStyle(lineStyle),
+                DashPattern = StyleTools.DashPattern(lineStyle)
             };
-
-            switch (lineStyle)
-            {
-                case LineStyle.Solid:
-                    penLine.DashStyle = System.Drawing.Drawing2D.DashStyle.Solid;
-                    break;
-                case LineStyle.Dash:
-                    penLine.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
-                    penLine.DashPattern = new float[] { 8.0F, 4.0F };
-                    break;
-                case LineStyle.DashDot:
-                    penLine.DashStyle = System.Drawing.Drawing2D.DashStyle.DashDot;
-                    penLine.DashPattern = new float[] { 8.0F, 4.0F, 2.0F, 4.0F };
-                    break;
-                case LineStyle.DashDotDot:
-                    penLine.DashStyle = System.Drawing.Drawing2D.DashStyle.DashDotDot;
-                    penLine.DashPattern = new float[] { 8.0F, 4.0F, 2.0F, 4.0F, 2.0F, 4.0F };
-                    break;
-                case LineStyle.Dot:
-                    penLine.DashStyle = System.Drawing.Drawing2D.DashStyle.Dot;
-                    penLine.DashPattern = new float[] { 2.0F, 4.0F };
-                    break;
-
-            }
-
 
             penLineError = new Pen(color, (float)errorLineWidth)
             {
-                // this prevents sharp corners
                 StartCap = System.Drawing.Drawing2D.LineCap.Round,
                 EndCap = System.Drawing.Drawing2D.LineCap.Round,
                 LineJoin = System.Drawing.Drawing2D.LineJoin.Round
@@ -116,7 +91,7 @@ namespace ScottPlot
             return $"PlottableScatter with {pointCount} points";
         }
 
-        public override double[] GetLimits()
+        public override Config.AxisLimits2D GetLimits()
         {
             double[] limits = new double[4];
 
@@ -155,7 +130,9 @@ namespace ScottPlot
                         limits[3] = ys[i] + errorY[i];
                 }
             }
-            return limits;
+
+            // TODO: use features of 2d axis
+            return new Config.AxisLimits2D(limits);
         }
 
         PointF[] points;
@@ -239,12 +216,17 @@ namespace ScottPlot
                 settings.dataBackend.DrawMarkers(points, markerShape, markerSize, color);
         }
 
-        public void SaveCSV(string filePath)
+        public void SaveCSV(string filePath, string delimiter = ", ", string separator = "\n")
+        {
+            System.IO.File.WriteAllText(filePath, GetCSV(delimiter, separator));
+        }
+
+        public string GetCSV(string delimiter = ", ", string separator = "\n")
         {
             StringBuilder csv = new StringBuilder();
             for (int i = 0; i < ys.Length; i++)
-                csv.AppendFormat("{0}, {1}\n", xs[i], ys[i]);
-            System.IO.File.WriteAllText(filePath, csv.ToString());
+                csv.AppendFormat("{0}{1}{2}{3}", xs[i], delimiter, ys[i], separator);
+            return csv.ToString();
         }
     }
 }

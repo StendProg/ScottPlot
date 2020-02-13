@@ -224,12 +224,14 @@ namespace ScottPlot
                 if (settings.ticks.rulerModeY)
                 {
                     settings.figureBackend.DrawLine(pen, xPx, yPx, xPx - settings.ticks.size - settings.ticks.font.Height, yPx);
-                    settings.figureBackend.DrawString(text, settings.ticks.font, brush, xPx - settings.ticks.size, yPx, settings.misc.sfSouthEast);
+                    if (settings.ticks.displayYlabels)
+                        settings.figureBackend.DrawString(text, settings.ticks.font, brush, xPx - settings.ticks.size, yPx, settings.misc.sfSouthEast);
                 }
                 else
                 {
                     settings.figureBackend.DrawLine(pen, xPx, yPx, xPx - settings.ticks.size, yPx);
-                    settings.figureBackend.DrawString(text, settings.ticks.font, brush, xPx - settings.ticks.size, yPx, settings.misc.sfEast);
+                    if (settings.ticks.displayYlabels)
+                        settings.figureBackend.DrawString(text, settings.ticks.font, brush, xPx - settings.ticks.size, yPx, settings.misc.sfEast);
                 }
             }
 
@@ -266,12 +268,14 @@ namespace ScottPlot
                 if (settings.ticks.rulerModeX)
                 {
                     settings.figureBackend.DrawLine(pen, xPx, yPx, xPx, yPx + settings.ticks.size + settings.ticks.font.Height);
-                    settings.figureBackend.DrawString(text, settings.ticks.font, brush, xPx, yPx + settings.ticks.size, settings.misc.sfNorthWest);
+                    if (settings.ticks.displayXlabels)
+                        settings.figureBackend.DrawString(text, settings.ticks.font, brush, xPx, yPx + settings.ticks.size, settings.misc.sfNorthWest);
                 }
                 else
                 {
                     settings.figureBackend.DrawLine(pen, xPx, yPx, xPx, yPx + settings.ticks.size);
-                    settings.figureBackend.DrawString(text, settings.ticks.font, brush, xPx, yPx + settings.ticks.size, settings.misc.sfNorth);
+                    if (settings.ticks.displayXlabels)
+                        settings.figureBackend.DrawString(text, settings.ticks.font, brush, xPx, yPx + settings.ticks.size, settings.misc.sfNorth);
                 }
             }
 

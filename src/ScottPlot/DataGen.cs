@@ -19,7 +19,7 @@ namespace ScottPlot
 
         public static double[] Sin(int pointCount, double oscillations = 1, double offset = 0,  double mult = 1, double phase = 0)
         {
-            double sinScale = 2 * Math.PI * oscillations / pointCount;
+            double sinScale = 2 * Math.PI * oscillations / (pointCount - 1);
             double[] ys = new double[pointCount];
             for (int i = 0; i < ys.Length; i++)
                 ys[i] = Math.Sin(i * sinScale + phase * Math.PI * 2) * mult + offset;
@@ -52,7 +52,7 @@ namespace ScottPlot
 
         public static double[] Cos(int pointCount, double oscillations = 1, double offset = 0, double mult = 1, double phase = 0)
         {
-            double sinScale = 2 * Math.PI * oscillations / pointCount;
+            double sinScale = 2 * Math.PI * oscillations / (pointCount - 1);
             double[] ys = new double[pointCount];
             for (int i = 0; i < ys.Length; i++)
                 ys[i] = Math.Cos(i * sinScale + phase * Math.PI * 2) * mult + offset;
@@ -182,6 +182,29 @@ namespace ScottPlot
             }
 
             return ohlcs;
+        }
+
+        public static (double, double) RandomSpan(Random rand = null, double low = 0, double high = 100, double minimumSpacing = 10)
+        {
+            if (rand is null)
+                rand = new Random();
+
+            double span = Math.Abs(high - low);
+
+            for (int attempts = 0; attempts<10_000; attempts++)
+            {
+                double valA = rand.NextDouble() * span + low;
+                double valB = rand.NextDouble() * span + low;
+                if (Math.Abs(valA - valB) >= minimumSpacing)
+                {
+                    if (valA<valB)
+                        return (valA, valB);
+                    else
+                        return (valB, valA);
+                }
+            }
+
+            throw new ArgumentException();
         }
     }
 }
