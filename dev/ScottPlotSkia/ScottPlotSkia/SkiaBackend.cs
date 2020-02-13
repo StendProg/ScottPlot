@@ -101,7 +101,8 @@ namespace ScottPlotSkia
 
         public void DrawRectangle(Pen pen, float x, float y, float width, float height)
         {
-            throw new NotImplementedException();
+            SKPaint paint = new SKPaint() { Color = pen.Color.ToSKColor(), IsAntialias = AA, Style = SKPaintStyle.Stroke };
+            canvas.DrawRect(new SKRect(x + 0.5f, y + 0.5f, x + width + 0.5f, y + height + 0.5f), paint);
         }
 
         public void DrawRectangle(Pen pen, Rectangle rect)
@@ -130,7 +131,8 @@ namespace ScottPlotSkia
                 point.Y -= paint.FontSpacing - paint.TextSize;
             else if (format.LineAlignment == StringAlignment.Center)
                 point.Y += paint.TextSize / 2;
-            canvas.DrawText(text, point.X, point.Y, paint);
+            if (text != null)
+                canvas.DrawText(text, point.X, point.Y, paint);
         }
         public void DrawString(string text, Font font, Brush brush, float x, float y, StringFormat format)
         {
