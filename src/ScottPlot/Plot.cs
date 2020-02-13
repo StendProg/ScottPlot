@@ -194,7 +194,8 @@ namespace ScottPlot
             bool signalPlots = true,
             bool text = true,
             bool bar = true,
-            bool finance = true
+            bool finance = true,
+            bool axisSpans = true
             )
         {
             settings.Clear(
@@ -203,7 +204,8 @@ namespace ScottPlot
                 signals: signalPlots,
                 text: text,
                 bar: bar,
-                finance: finance
+                finance: finance,
+                axSpans: axisSpans
                 );
         }
 
@@ -290,6 +292,31 @@ namespace ScottPlot
 
             settings.plottables.Add(scatterPlot);
             return scatterPlot;
+        }
+
+        public PlottableFunction PlotFunction(
+            Func<double, double?> function,
+            double minX,
+            double maxX,
+            double minY,
+            double maxY,
+            Color? color = null,
+            double lineWidth = 1,
+            double markerSize = 0,
+            string label = "f(x)",
+            MarkerShape markerShape = MarkerShape.filledCircle,
+            LineStyle lineStyle = LineStyle.Solid
+        )
+        {
+            if (color == null)
+            {
+                color = settings.GetNextColor();
+            }
+
+            PlottableFunction functionPlot = new PlottableFunction(function, minX, maxX, minY, maxY, color.Value, lineWidth, markerSize, label, markerShape, lineStyle);
+
+            settings.plottables.Add(functionPlot);
+            return functionPlot;
         }
 
         public PlottableScatter PlotScatter(
@@ -515,6 +542,23 @@ namespace ScottPlot
             return barPlot;
         }
 
+        public PlottableBoxAndWhisker PlotBoxAndWhisker(Statistics.BoxAndWhisker[] boxes)
+        {
+            var bawPlot = new PlottableBoxAndWhisker(boxes);
+            settings.plottables.Add(bawPlot);
+            return bawPlot;
+        }
+
+        public PlottableBoxAndWhiskerV2 PlotBoxAndWhiskerV2(double[] xs, double[][] ys, MarkerShape markerShape = MarkerShape.asterisk, double lineWidth = 2, Color? color = null, string label = null, double boxWidth = 50)
+        {
+            if (!color.HasValue)
+                color = settings.GetNextColor();
+
+            PlottableBoxAndWhiskerV2 boxWhisker = new PlottableBoxAndWhiskerV2(xs, ys, color.Value, label, markerShape, lineWidth, boxWidth);
+            settings.plottables.Add(boxWhisker);
+            return boxWhisker;
+        }
+
         public PlottableOHLC PlotOHLC(OHLC[] ohlcs)
         {
             PlottableOHLC ohlc = new PlottableOHLC(ohlcs, displayCandles: false);
@@ -651,9 +695,38 @@ namespace ScottPlot
 
         public List<Plottable> GetPlottables()
         {
-            // This function is useful because the end user really isn't 
-            // intended to interact with the settincs class directly.
             return settings.plottables;
+        }
+
+        public List<IDraggable> GetDraggables()
+        {
+            List<IDraggable> draggables = new List<IDraggable>();
+
+            foreach (Plottable plottable in GetPlottables())
+                if (plottable is IDraggable draggable)
+                    draggables.Add(draggable);
+
+            return draggables;
+        }
+
+        public IDraggable GetDraggableUnderMouse(double pixelX, double pixelY, int snapDistancePixels = 5)
+        {
+            PointF mouseLocation = new PointF((float)pixelX, (float)pixelY);
+            (double mouseX, double mouseY, double snapX, double snapY) = GetMouseCoordinatesAndSnapDistances(mouseLocation, snapDistancePixels);
+
+            foreach (IDraggable draggable in GetDraggables())
+                if (draggable.IsUnderMouse(mouseX, mouseY, snapX, snapY))
+                    return draggable;
+
+            return null;
+        }
+
+        private (double, double, double, double) GetMouseCoordinatesAndSnapDistances(PointF mouseLocation, int snapDistancePixels)
+        {
+            PointF mouseCoordinate = CoordinateFromPixel(mouseLocation);
+            double snapDistanceX = GetSettings(false).xAxisUnitsPerPixel * snapDistancePixels;
+            double snapDistanceY = GetSettings(false).yAxisUnitsPerPixel * snapDistancePixels;
+            return (mouseCoordinate.X, mouseCoordinate.Y, snapDistanceX, snapDistanceY);
         }
 
         public Settings GetSettings(bool showWarning = true)
@@ -758,7 +831,22 @@ namespace ScottPlot
             return settings.GetLocation(pixelX, pixelY);
         }
 
+        public PointF CoordinateFromPixel(float pixelX, float pixelY)
+        {
+            return settings.GetLocation(pixelX, pixelY);
+        }
+
+        public PointF CoordinateFromPixel(double pixelX, double pixelY)
+        {
+            return settings.GetLocation(pixelX, pixelY);
+        }
+
         public PointF CoordinateFromPixel(Point pixel)
+        {
+            return CoordinateFromPixel(pixel.X, pixel.Y);
+        }
+
+        public PointF CoordinateFromPixel(PointF pixel)
         {
             return CoordinateFromPixel(pixel.X, pixel.Y);
         }
@@ -851,7 +939,7 @@ namespace ScottPlot
             bool? fixedLineWidth = null
             )
         {
-            if(fontName == null)
+            if (fontName == null)
                 fontName = Config.Fonts.GetDefaultFontName();
             if (fontColor != null)
                 settings.legend.colorText = (Color)fontColor;
@@ -893,6 +981,8 @@ namespace ScottPlot
             bool? displayTicksY = null,
             bool? displayTicksXminor = null,
             bool? displayTicksYminor = null,
+            bool? displayTickLabelsX = null,
+            bool? displayTickLabelsY = null,
             Color? color = null,
             bool? useMultiplierNotation = null,
             bool? useOffsetNotation = null,
@@ -935,10 +1025,14 @@ namespace ScottPlot
                 settings.ticks.x.invertSign = (bool)invertSignX;
             if (invertSignY != null)
                 settings.ticks.y.invertSign = (bool)invertSignY;
-            if (fontSize == null)
-                fontSize = settings.ticks.font.Size;
+            if (fontSize != null)
+                settings.ticks.fontSize = (float)fontSize;
             if (fontName != null)
-                settings.ticks.font = new Font(fontName, (float)fontSize, FontStyle.Regular);
+                settings.ticks.fontName = fontName;
+            if (displayTickLabelsX != null)
+                settings.ticks.displayXlabels = (bool)displayTickLabelsX;
+            if (displayTickLabelsY != null)
+                settings.ticks.displayYlabels = (bool)displayTickLabelsY;
 
             // dont use offset notation if the sign is inverted
             if (settings.ticks.x.invertSign || settings.ticks.y.invertSign)
@@ -1168,6 +1262,11 @@ namespace ScottPlot
 
             //foreach (var plottable in GetPlottables())
             //plottable.useParallel = useParallel;
+        }
+
+        public void SetCulture(System.Globalization.CultureInfo culture)
+        {
+            settings.culture = culture;
         }
 
         #endregion

@@ -24,13 +24,15 @@ namespace ScottPlotDemos
 
             if (Debugger.IsAttached)
             {
-                btnPlotTypes_Click(null, null);
+                //btnPlotTypes_Click(null, null);
                 //btnDraggableAxisLines_Click(null, null);
                 //btnSignal_Click(null, null);
                 //btnTimeAxis_Click(null, null);
                 //btnFinancial_Click(null, null);
                 //btnRegression_Click(null, null);
                 //btnIncoming_Click(null, null);
+                //btnTickTester_Click(null, null);
+                btnBoxAndWhisker_Click(null, null);
             }
         }
 
@@ -222,6 +224,12 @@ namespace ScottPlotDemos
         private void btnIncoming_Click(object sender, EventArgs e)
         {
             using (var frm = new FormIncomingData())
+                frm.ShowDialog();
+        }
+
+        private void btnBoxAndWhisker_Click(object sender, EventArgs e)
+        {
+            using (var frm = new FormBoxWhisker())
                 frm.ShowDialog();
         }
     }

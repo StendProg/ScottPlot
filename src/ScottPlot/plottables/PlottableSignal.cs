@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Drawing;
-using System.Linq.Expressions;
 
 namespace ScottPlot
 {
@@ -70,7 +69,7 @@ namespace ScottPlot
             return $"PlottableSignal with {pointCount} points";
         }
 
-        public override double[] GetLimits()
+        public override Config.AxisLimits2D GetLimits()
         {
             double yMin = ys[0];
             double yMax = ys[0];
@@ -87,7 +86,8 @@ namespace ScottPlot
             limits[2] = yMin + yOffset;
             limits[3] = yMax + yOffset;
 
-            return limits;
+            // TODO: use features of 2d axis
+            return new Config.AxisLimits2D(limits);
         }
 
         private void RenderSingleLine(Settings settings)
@@ -150,8 +150,8 @@ namespace ScottPlot
                     if (ys[i] > highestValue)
                         highestValue = ys[i];
                 }
-                float yPxHigh = settings.GetPixel(0, lowestValue + yOffset).Y;
-                float yPxLow = settings.GetPixel(0, highestValue + yOffset).Y;
+                float yPxHigh = (float)settings.GetPixelY(lowestValue + yOffset);
+                float yPxLow = (float)settings.GetPixelY(highestValue + yOffset);
 
                 linePoints[(xPx - xPxStart) * 2] = new PointF(xPx, yPxLow);
                 linePoints[(xPx - xPxStart) * 2 + 1] = new PointF(xPx, yPxHigh);
@@ -202,8 +202,8 @@ namespace ScottPlot
                     .Where((y, i) => indexes.Contains(i));
 
                 var Points = levelsValues
-                    .Select(x => settings.GetPixel(0, x + yOffset).Y)
-                    .Select(y => new PointF(xPx, y))
+                    .Select(x => settings.GetPixelY(x + yOffset))
+                    .Select(y => new PointF(xPx, (float)y))
                     .ToArray();
 
                 linePointsLevels.Add(Points);
@@ -260,7 +260,7 @@ namespace ScottPlot
 
             List<PointF[]> linePointsLevels = levelValues
                 .Select(x => x.levelsValues
-                                .Select(y => new PointF(x.xPx, settings.GetPixel(0, y + yOffset).Y))
+                                .Select(y => new PointF(x.xPx, (float)settings.GetPixelY(y + yOffset)))
                                 .ToArray())
                 .ToList();
 
@@ -282,7 +282,6 @@ namespace ScottPlot
         private void RenderHighDensity(Settings settings, double offsetPoints, double columnPointCount)
         {
             // this function is for when the graph is zoomed out so each pixel column represents the vertical span of multiple data points
-
             int xPxStart = (int)Math.Ceiling((-1 - offsetPoints) / columnPointCount - 1);
             int xPxEnd = (int)Math.Ceiling((ys.Length - offsetPoints) / columnPointCount);
             xPxStart = Math.Max(0, xPxStart);
@@ -319,8 +318,8 @@ namespace ScottPlot
                     if (ys[i] > highestValue)
                         highestValue = ys[i];
                 }
-                float yPxHigh = settings.GetPixel(0, lowestValue + yOffset).Y;
-                float yPxLow = settings.GetPixel(0, highestValue + yOffset).Y;
+                float yPxHigh = (float)settings.GetPixelY(lowestValue + yOffset);
+                float yPxLow = (float)settings.GetPixelY(highestValue + yOffset);
 
                 // adjust order of points to enhance anti-aliasing
                 if ((linePoints.Count < 2) || (yPxLow < linePoints[linePoints.Count - 1].Y))
@@ -388,12 +387,17 @@ namespace ScottPlot
             }
         }
 
-        public void SaveCSV(string filePath)
+        public void SaveCSV(string filePath, string delimiter = ", ", string separator = "\n")
+        {
+            System.IO.File.WriteAllText(filePath, GetCSV(delimiter, separator));
+        }
+
+        public string GetCSV(string delimiter = ", ", string separator = "\n")
         {
             StringBuilder csv = new StringBuilder();
             for (int i = 0; i < ys.Length; i++)
-                csv.AppendFormat("{0}, {1}\n", xOffset + i * samplePeriod, ys[i]);
-            System.IO.File.WriteAllText(filePath, csv.ToString());
+                csv.AppendFormat("{0}{1}{2}{3}", xOffset + i * samplePeriod, delimiter, ys[i] + yOffset, separator);
+            return csv.ToString();
         }
     }
 }

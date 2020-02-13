@@ -16,7 +16,7 @@ namespace ScottPlot
     // - if source array is changed UpdateTrees() must be called
     // - source array can be change by call updateData(), updating by ranges much faster.
     public class PlottableSignalConst<T> : Plottable, IExportable where T : struct, IComparable
-    {    
+    {
         // Any changes must be sync with PlottableSignal
         public T[] ys;
         public double sampleRate;
@@ -335,7 +335,7 @@ namespace ScottPlot
             highestValue = Convert.ToDouble(highestValueT);
         }
 
-        public override double[] GetLimits()
+        public override Config.AxisLimits2D GetLimits()
         {
             double[] limits = new double[4];
             limits[0] = 0 + xOffset;
@@ -343,7 +343,9 @@ namespace ScottPlot
             MinMaxRangeQuery(0, ys.Length - 1, out limits[2], out limits[3]);
             limits[2] += yOffset;
             limits[3] += yOffset;
-            return limits;
+
+            // TODO: use features of 2d axis
+            return new Config.AxisLimits2D(limits);
         }
 
         private void RenderSingleLine(Settings settings)
@@ -399,8 +401,9 @@ namespace ScottPlot
                 // get the min and max value for this column                
                 double lowestValue, highestValue;
                 MinMaxRangeQuery(index1, index2, out lowestValue, out highestValue);
-                float yPxHigh = settings.GetPixel(0, lowestValue + yOffset).Y;
-                float yPxLow = settings.GetPixel(0, highestValue + yOffset).Y;
+                float yPxHigh = (float)settings.GetPixelY(lowestValue + yOffset);
+                float yPxLow = (float)settings.GetPixelY(highestValue + yOffset);
+
 
                 linePoints[(xPx - xPxStart) * 2] = new PointF(xPx, yPxLow);
                 linePoints[(xPx - xPxStart) * 2 + 1] = new PointF(xPx, yPxHigh);
@@ -445,8 +448,8 @@ namespace ScottPlot
                 // get the min and max value for this column                
                 double lowestValue, highestValue;
                 MinMaxRangeQuery(index1, index2, out lowestValue, out highestValue);
-                float yPxHigh = settings.GetPixel(0, lowestValue + yOffset).Y;
-                float yPxLow = settings.GetPixel(0, highestValue + yOffset).Y;
+                float yPxHigh = (float)settings.GetPixelY(lowestValue + yOffset);
+                float yPxLow = (float)settings.GetPixelY(highestValue + yOffset);
 
                 // adjust order of points to enhance anti-aliasing
                 if ((linePoints.Count < 2) || (yPxLow < linePoints[linePoints.Count - 1].Y))
@@ -505,12 +508,17 @@ namespace ScottPlot
             return $"PlottableSignalConst with {pointCount} points ({typeof(T).Name}), trees {(TreesReady ? "" : "not")} calculated";
         }
 
-        public void SaveCSV(string filePath)
+        public void SaveCSV(string filePath, string delimiter = ", ", string separator = "\n")
+        {
+            System.IO.File.WriteAllText(filePath, GetCSV(delimiter, separator));
+        }
+
+        public string GetCSV(string delimiter = ", ", string separator = "\n")
         {
             StringBuilder csv = new StringBuilder();
             for (int i = 0; i < ys.Length; i++)
-                csv.AppendFormat("{0}, {1}\n", xOffset + i * samplePeriod, Convert.ToDouble(ys[i]));
-            System.IO.File.WriteAllText(filePath, csv.ToString());
+                csv.AppendFormat("{0}{1}{2}{3}", xOffset + i * samplePeriod, delimiter, Convert.ToDouble(ys[i]) + yOffset, separator);
+            return csv.ToString();
         }
     }
 }
