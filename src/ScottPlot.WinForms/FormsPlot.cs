@@ -103,7 +103,7 @@ namespace ScottPlot
 
         private Point? mouseLeftDownLocation, mouseRightDownLocation, mouseMiddleDownLocation;
         double[] axisLimitsOnMouseDown;
-        private bool isPanningOrZooming
+        protected bool isPanningOrZooming
         {
             get
             {
@@ -116,7 +116,7 @@ namespace ScottPlot
         }
 
         IDraggable plottableBeingDragged = null;
-        private bool isMovingDraggable { get { return (plottableBeingDragged != null); } }
+        protected bool isMovingDraggable { get { return (plottableBeingDragged != null); } }
 
         private Cursor GetCursor(Config.Cursor scottPlotCursor)
         {

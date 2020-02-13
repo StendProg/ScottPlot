@@ -84,7 +84,7 @@ namespace ScottPlotSkia
                 currentlyRendering = true;
                 skiaBackend?.SetAntiAlias(!lowQuality);
                 glControl1?.Invalidate();
-                if (isMouseDragging)
+                if (isPanningOrZooming || isMovingDraggable)
                     Application.DoEvents();
                 currentlyRendering = false;
             }

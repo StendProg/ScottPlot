@@ -50,9 +50,9 @@ namespace ScottPlot
                     float whiskerRight = (float)settings.GetPixelX(baw.xPosition + baw.whisker.width / 2);
 
                     var whiskerPen = new Pen(baw.whisker.lineColor, baw.whisker.lineWidth);
-                    settings.gfxData.DrawLine(whiskerPen, center, whiskerMin, center, whiskerMax);
-                    settings.gfxData.DrawLine(whiskerPen, whiskerLeft, whiskerMax, whiskerRight, whiskerMax);
-                    settings.gfxData.DrawLine(whiskerPen, whiskerLeft, whiskerMin, whiskerRight, whiskerMin);
+                    settings.dataBackend.DrawLine(whiskerPen, center, whiskerMin, center, whiskerMax);
+                    settings.dataBackend.DrawLine(whiskerPen, whiskerLeft, whiskerMax, whiskerRight, whiskerMax);
+                    settings.dataBackend.DrawLine(whiskerPen, whiskerLeft, whiskerMin, whiskerRight, whiskerMin);
                 }
 
                 if (baw.box.outline || baw.box.fill)
@@ -74,13 +74,13 @@ namespace ScottPlot
                     if (baw.box.fill)
                     {
                         var boxBrush = new SolidBrush(baw.box.fillColor);
-                        settings.gfxData.FillRectangle(boxBrush, Rectangle.Round(boxRect));
+                        settings.dataBackend.FillRectangle(boxBrush, Rectangle.Round(boxRect));
                     }
 
                     if (baw.box.outline)
                     {
                         var boxPen = new Pen(baw.box.lineColor, baw.box.lineWidth);
-                        settings.gfxData.DrawRectangle(boxPen, Rectangle.Round(boxRect));
+                        settings.dataBackend.DrawRectangle(boxPen, Rectangle.Round(boxRect));
                     }
                 }
 
@@ -91,12 +91,12 @@ namespace ScottPlot
                     float midlineY = (float)settings.GetPixelY(baw.midline.position);
 
                     var mindlinePen = new Pen(baw.midline.lineColor, baw.midline.lineWidth);
-                    settings.gfxData.DrawLine(mindlinePen, boxLeft, midlineY, boxRight, midlineY);
+                    settings.dataBackend.DrawLine(mindlinePen, boxLeft, midlineY, boxRight, midlineY);
                 }
 
                 foreach (double curr in baw.points) {
                     PointF point = new PointF(center, (float) settings.GetPixelY(curr));
-                    MarkerTools.DrawMarker(settings.gfxData, point, MarkerShape.asterisk, 6, color);
+                    MarkerTools.DrawMarker(settings.dataBackend, point, MarkerShape.asterisk, 6, color);
                 }
             }
         }

@@ -190,6 +190,8 @@ namespace ScottPlotSkia
 
         public SizeF MeasureString(string text, Font font)
         {
+            if (text == null)
+                return new Size(0, 0); // GDI do the same instead of skia throws
             SKPaint paint = new SKPaint() { TextSize = font.Size * 2 };
             return new SizeF(paint.MeasureText(text), paint.TextSize);
         }
