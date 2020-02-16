@@ -1,4 +1,4 @@
-﻿using Harmony;
+﻿using HarmonyLib;
 using ScottPlotDemos;
 using ScottPlotSkia;
 using System;
@@ -14,7 +14,7 @@ namespace WinformsSkiaDemosLauncher
     {
         static void Main(string[] args)
         {
-            var harmony = HarmonyInstance.Create("DemosUseSkiaControlPatch");
+            var harmony = new Harmony("DemosUseSkiaControlPatch");
 
             var demosAssembly = typeof(FormMain).GetTypeInfo().Assembly;
             var formsInDemos = demosAssembly.GetTypes().Where(x => x.IsSubclassOf(typeof(Form)));
