@@ -826,6 +826,17 @@ namespace ScottPlot
             return settings.axes.limits;
         }
 
+        public bool EqualAxis
+        {
+            get => settings.axes.equalAxes;
+            set
+            {
+                settings.axes.equalAxes = value;
+                if (value)
+                    settings.AxisAuto();
+            }
+        }
+
         public double[] AxisEqual(bool preserveY = true)
         {
             if (preserveY)
