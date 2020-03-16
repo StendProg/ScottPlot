@@ -5,7 +5,7 @@
     <AssemblyName>ScottPlot.WinForms</AssemblyName>
     <RootNamespace>ScottPlot</RootNamespace>
     <UseWindowsForms>true</UseWindowsForms>
-    <ApplicationIcon>icon.ico</ApplicationIcon>
+    <ApplicationIcon></ApplicationIcon>
     <PackageIcon>icon.png</PackageIcon>
     <Description>This package provides a Windows Forms user control (FormsPlot) to interactively display ScottPlot graphs.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -22,8 +22,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ScottPlot\ScottPlot.csproj" />
-    <None Include="icon.png" Pack="true" PackagePath="\" />
-    <None Include="icon.ico" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>
