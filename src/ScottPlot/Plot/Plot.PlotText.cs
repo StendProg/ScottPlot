@@ -29,18 +29,18 @@ namespace ScottPlot
         {
             PlottableText plottableText = new PlottableText()
             {
-                text = text,
-                x = x,
-                y = y,
+                Text = text,
+                X = x,
+                Y = y,
                 FontColor = color ?? settings.GetNextColor(),
                 FontName = fontName ?? Config.Fonts.GetDefaultFontName(),
                 FontSize = (float)fontSize,
                 FontBold = bold,
-                label = label,
-                alignment = alignment,
-                rotation = rotation,
-                frame = frame,
-                frameColor = frameColor ?? Color.White
+                Label = label,
+                Alignment = alignment,
+                Rotation = rotation,
+                Frame = frame,
+                FrameColor = frameColor ?? Color.White
             };
             Add(plottableText);
             return plottableText;

@@ -21,7 +21,7 @@ namespace ScottPlot.Demo.Experimental
                     rotation: 0, frame: false, frameColor: System.Drawing.Color.Green);
 
                 // you can access properties which may not be exposed by a Plot method
-                customPlottable.rotation = 45;
+                customPlottable.Rotation = 45;
 
                 // add the custom plottable to the list of plottables like this
                 List<Plottable> plottables = plt.GetPlottables();

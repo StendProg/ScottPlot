@@ -11,40 +11,90 @@ namespace ScottPlot
 {
     public class PlottableText : Plottable, IPlottable
     {
-        public double x;
-        public double y;
-        public double rotation;
-        public string text;
-        public TextAlignment alignment;
-        public bool frame;
-        public Color frameColor;
-        public string label;
 
-        public Color FontColor;
-        public string FontName;
-        public float FontSize;
-        public bool FontBold;
+        private double x;
+        public double X 
+        {
+            get => x;
+            set
+            {
+                if (double.IsInfinity(value) || double.IsNaN(value))
+                    ValidationErrorMessage = "X must be a rational number";
+                    // we just set last error message here, but can throw or write debug message here
+                else
+                    x = value;
+            }
+        }
+
+        private double y;
+        public double Y
+        {
+            get => y;
+            set
+            {
+                if (double.IsInfinity(value) || double.IsNaN(value))
+                    ValidationErrorMessage = "Y must be a rational number";
+                    // we just set last error message here, but can throw or write debug message here
+                else
+                    y = value;
+            }
+        }
+
+        private double rotation;
+        public double Rotation 
+        {
+            get => rotation;
+            set
+            {
+                if (double.IsInfinity(Rotation) || double.IsNaN(Rotation))
+                    ValidationErrorMessage = "rotation must be a rational number";
+                else
+                    rotation = value;
+            }
+        }
+        public string Text { get; set;}
+        public TextAlignment Alignment { get; set; }
+        public bool Frame { get; set; }
+        public Color FrameColor { get; set; }
+        public string Label { get; set; }
+
+        public Color FontColor { get; set; }
+        public string FontName {get; set;}
+
+        private float fontSize;
+        public float FontSize 
+        {
+            get => fontSize;
+            set
+            {
+                if (value >= 1)
+                    fontSize = value;
+                else
+                    ValidationErrorMessage = "font must be at least size 1";
+            }
+        }
+        public bool FontBold { get; set; }
 
         public PlottableText() { }
 
-        [Obsolete("use the new constructor with data-only arguments", true)]
+        //[Obsolete("use the new constructor with data-only arguments", true)]
         public PlottableText(string text, double x, double y, Color color, string fontName, double fontSize, bool bold, string label, TextAlignment alignment, double rotation, bool frame, Color frameColor)
         {
-            this.text = text ?? throw new Exception("Text cannot be null");
-            this.x = x;
-            this.y = y;
-            this.rotation = rotation;
-            this.label = label;
-            this.alignment = alignment;
-            this.frame = frame;
-            this.frameColor = frameColor;
+            this.Text = text ?? throw new Exception("Text cannot be null");
+            this.X = x;
+            this.Y = y;
+            this.Rotation = rotation;
+            this.Label = label;
+            this.Alignment = alignment;
+            this.Frame = frame;
+            this.FrameColor = frameColor;
 
             (FontColor, FontName, FontSize, FontBold) = (color, fontName, (float)fontSize, bold);
         }
 
-        public override string ToString() => $"PlottableText \"{text}\" at ({x}, {y})";
+        public override string ToString() => $"PlottableText \"{Text}\" at ({X}, {Y})";
 
-        public override AxisLimits2D GetLimits() => new AxisLimits2D(x, x, y, y);
+        public override AxisLimits2D GetLimits() => new AxisLimits2D(X, X, Y, Y);
 
         public override void Render(Settings settings) => throw new NotImplementedException("Use the other Render method");
 
@@ -57,13 +107,13 @@ namespace ScottPlot
         {
             StringBuilder sb = new StringBuilder();
 
-            if (double.IsInfinity(x) || double.IsNaN(x))
+            if (double.IsInfinity(X) || double.IsNaN(X))
                 sb.AppendLine("X must be a rational number");
 
-            if (double.IsInfinity(y) || double.IsNaN(y))
+            if (double.IsInfinity(Y) || double.IsNaN(Y))
                 sb.AppendLine("Y must be a rational number");
 
-            if (double.IsInfinity(rotation) || double.IsNaN(rotation))
+            if (double.IsInfinity(Rotation) || double.IsNaN(Rotation))
                 sb.AppendLine("rotation must be a rational number");
 
             if (FontSize < 1)
@@ -76,7 +126,7 @@ namespace ScottPlot
 
         private (float pixelX, float pixelY) ApplyAlignmentOffset(float pixelX, float pixelY, float stringWidth, float stringHeight)
         {
-            switch (alignment)
+            switch (Alignment)
             {
                 case TextAlignment.lowerCenter:
                     return (pixelX - stringWidth / 2, pixelY - stringHeight);
@@ -103,29 +153,26 @@ namespace ScottPlot
 
         public void Render(PlotDimensions dims, Bitmap bmp)
         {
-            if (IsValidData() == false)
-                throw new InvalidOperationException($"Invalid data: {ValidationErrorMessage}");
-
             using (Graphics gfx = Graphics.FromImage(bmp))
             using (var fontBrush = new SolidBrush(FontColor))
-            using (var frameBrush = new SolidBrush(frameColor))
+            using (var frameBrush = new SolidBrush(FrameColor))
             using (var font = GDI.Font(FontName, FontSize, FontBold))
             {
                 float pixelX = dims.GetPixelX(x);
                 float pixelY = dims.GetPixelY(y);
-                SizeF stringSize = GDI.MeasureString(gfx, text, font);
+                SizeF stringSize = GDI.MeasureString(gfx, Text, font);
                 RectangleF stringRect = new RectangleF(0, 0, stringSize.Width, stringSize.Height);
 
                 if (rotation == 0)
                     (pixelX, pixelY) = ApplyAlignmentOffset(pixelX, pixelY, stringSize.Width, stringSize.Height);
 
                 gfx.TranslateTransform(pixelX, pixelY);
-                gfx.RotateTransform((float)rotation);
+                gfx.RotateTransform((float)Rotation);
 
-                if (frame)
+                if (Frame)
                     gfx.FillRectangle(frameBrush, stringRect);
 
-                gfx.DrawString(text, font, fontBrush, new PointF(0, 0));
+                gfx.DrawString(Text, font, fontBrush, new PointF(0, 0));
 
                 gfx.ResetTransform();
             }
