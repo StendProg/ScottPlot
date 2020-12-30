@@ -11,7 +11,7 @@
     <TabControl>
         <TabItem Header="ScottPlot 1">
             <DockPanel>
-                <ScottPlot:WpfPlot Name="WpfPlot1"/>
+                <ScottPlot:WpfPlotOverlay Name="WpfPlot1"/>
             </DockPanel>
         </TabItem>
         <TabItem Header="ScottPlot 2">

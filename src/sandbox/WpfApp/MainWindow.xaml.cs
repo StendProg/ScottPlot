@@ -1,17 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using ScottPlot.Plottable;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace WpfApp
 {
@@ -25,10 +13,13 @@ namespace WpfApp
             InitializeComponent();
 
             WpfPlot1.plt.Title("Plot 1");
-            WpfPlot1.plt.PlotSignal(ScottPlot.DataGen.Sin(51));
+            WpfPlot1.plt.PlotScatter(ScottPlot.DataGen.Consecutive(50_000), ScottPlot.DataGen.Sin(50_000));
+            WpfPlot1.OverlayPlottables.Add(new HSpan() { X1 = 10, X2 = 25, DragEnabled = true });
 
             WpfPlot2.plt.Title("Plot 2");
-            WpfPlot2.plt.PlotSignal(ScottPlot.DataGen.Cos(51));
+            WpfPlot2.plt.PlotScatter(ScottPlot.DataGen.Consecutive(50_000), ScottPlot.DataGen.Sin(50_000));
+            WpfPlot2.plt.PlotHSpan(10, 25, draggable: true);
+            //WpfPlot2.plt.PlotSignal(ScottPlot.DataGen.Cos(5_000_000));
         }
     }
 }

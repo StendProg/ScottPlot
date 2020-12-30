@@ -1,4 +1,7 @@
 ﻿using Microsoft.Win32;
+using ScottPlot.Drawing;
+using ScottPlot.Plottable;
+using ScottPlot.WinForms.Events;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -11,9 +14,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using ScottPlot.WinForms.Events;
-using ScottPlot.Plottable;
-using ScottPlot.Drawing;
 
 namespace ScottPlot
 {
@@ -104,7 +104,7 @@ namespace ScottPlot
             }
         }
 
-        private static BitmapImage BmpImageFromBmp(System.Drawing.Bitmap bmp)
+        protected static BitmapImage BmpImageFromBmp(System.Drawing.Bitmap bmp)
         {
             using (var memory = new System.IO.MemoryStream())
             {
@@ -123,7 +123,7 @@ namespace ScottPlot
         }
 
         private bool currentlyRendering = false;
-        public void Render(bool skipIfCurrentlyRendering = false, bool lowQuality = false, bool recalculateLayout = false, bool processEvents = false)
+        public virtual void Render(bool skipIfCurrentlyRendering = false, bool lowQuality = false, bool recalculateLayout = false, bool processEvents = false)
         {
             if (isDesignerMode || plt is null || imagePlot.Width < 1 || imagePlot.Height < 1)
                 return;
@@ -223,7 +223,7 @@ namespace ScottPlot
         IDraggable plottableBeingDragged = null;
         private bool isMovingDraggable { get { return (plottableBeingDragged != null); } }
 
-        private System.Windows.Input.Cursor GetCursor(Cursor scottPlotCursor)
+        protected System.Windows.Input.Cursor GetCursor(Cursor scottPlotCursor)
         {
             switch (scottPlotCursor)
             {
@@ -243,7 +243,7 @@ namespace ScottPlot
             return pos;
         }
 
-        private Point GetPixelPosition(MouseEventArgs e, bool applyDpiScaling = true)
+        protected Point GetPixelPosition(MouseEventArgs e, bool applyDpiScaling = true)
         {
             Point pos = e.GetPosition(this);
             if (applyDpiScaling)
@@ -259,12 +259,17 @@ namespace ScottPlot
             return new System.Drawing.Point((int)pt.X, (int)pt.Y);
         }
 
+        protected virtual IDraggable GetDraggableUnderMouse(double pixelX, double pixelY, int snapDistance = 5)
+        {
+            return plt.GetDraggableUnderMouse(pixelX, pixelY);
+        }
+
         private void UserControl_MouseDown(object sender, MouseButtonEventArgs e)
         {
             CaptureMouse();
 
             var mousePixel = GetPixelPosition(e);
-            plottableBeingDragged = plt.GetDraggableUnderMouse(mousePixel.X, mousePixel.Y);
+            plottableBeingDragged = GetDraggableUnderMouse(mousePixel.X, mousePixel.Y);
 
             if (plottableBeingDragged is null)
             {
@@ -363,19 +368,24 @@ namespace ScottPlot
             return (x, y);
         }
 
+        protected virtual void RenderMovedDraggable()
+        {
+            Render(true);
+        }
+
         private void MouseMovedToMoveDraggable(MouseEventArgs e)
         {
             double x = plt.GetCoordinateX((float)GetPixelPosition(e).X);
             double y = plt.GetCoordinateY((float)GetPixelPosition(e).Y);
             plottableBeingDragged.DragTo(x, y, isShiftPressed);
             OnMouseDragPlottable(new PlottableDragEventArgs(plottableBeingDragged, e));
-            Render(true);
+            RenderMovedDraggable();
         }
 
-        private void MouseMovedWithoutInteraction(MouseEventArgs e)
+        protected virtual void MouseMovedWithoutInteraction(MouseEventArgs e)
         {
             // set the cursor based on what's beneath it
-            var draggableUnderCursor = plt.GetDraggableUnderMouse(GetPixelPosition(e).X, GetPixelPosition(e).Y);
+            var draggableUnderCursor = GetDraggableUnderMouse(GetPixelPosition(e).X, GetPixelPosition(e).Y);
             var spCursor = (draggableUnderCursor is null) ? ScottPlot.Cursor.Arrow : draggableUnderCursor.DragCursor;
             imagePlot.Cursor = GetCursor(spCursor);
         }
