@@ -48,7 +48,6 @@ namespace ScottPlot
                 p.Render(dims, bmp);
             }
 
-            gfx.DrawLine(new Pen(System.Drawing.Color.Blue), new PointF(0, 0), new PointF(50, 50));
             if (Overlay != null)
                 Overlay.Source = BmpImageFromBmp(bmp);
         }
